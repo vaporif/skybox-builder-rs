@@ -1,14 +1,19 @@
-use std::{fs, io::Error, path::{Path, PathBuf}};
+use std::{
+    fs,
+    io::Error,
+    path::{Path, PathBuf},
+};
 
 use image::DynamicImage;
 
 pub fn merge_all_files(path: &str) -> Result<(), Error> {
     let file_paths = get_file_paths(path)?;
-    let skyboxes = get_skyboxes(file_paths);
+    let skyboxes = get_skyboxes(file_paths.iter().map(|f| f.as_path()).collect());
 
-    for skybox in skyboxes.iter().map(|f| SkyBoxImageGroup::new(f)) {
-        skybox.merge();
-    }
+    skyboxes
+        .iter()
+        .map(|f| SkyBoxImageGroup::new(f))
+        .for_each(|f| f.merge());
 
     Ok(())
 }
@@ -26,10 +31,11 @@ fn get_file_paths(mut dir_path: &str) -> Result<Vec<PathBuf>, Error> {
     Ok(paths)
 }
 
-fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFilePath<'static>> {
+fn get_skyboxes(paths: Vec<&Path>) -> Vec<SkyBoxFilePath<'static>> {
     unimplemented!()
 }
 
+#[derive(Debug, PartialEq)]
 struct SkyBoxFilePath<'a> {
     left: &'a Path,
     right: &'a Path,
@@ -77,6 +83,29 @@ mod tests {
         let d_path = PathBuf::from("skybox_01a_down");
         let f_path = PathBuf::from("skybox_01a_front");
         let b_path = PathBuf::from("skybox_01a_back");
-        let paths = vec![PathBuf::new()];
+
+        let paths = vec![
+            l_path.as_path(),
+            r_path.as_path(),
+            u_path.as_path(),
+            d_path.as_path(),
+            f_path.as_path(),
+            b_path.as_path(),
+        ];
+
+        let expected = SkyBoxFilePath {
+            left: l_path.as_path(),
+            right: r_path.as_path(),
+            up: u_path.as_path(),
+            down: d_path.as_path(),
+            front: f_path.as_path(),
+            back: b_path.as_path(),
+        };
+
+        let skyboxes = get_skyboxes(paths);
+
+        assert!(skyboxes.len() == 1);
+
+        assert_eq!(*skyboxes.first().unwrap(), expected);
     }
 }
