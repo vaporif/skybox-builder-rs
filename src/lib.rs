@@ -31,12 +31,12 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFilePath<'static>> {
 }
 
 struct SkyBoxFilePath<'a> {
-    left: &'a str,
-    right: &'a str,
-    up: &'a str,
-    down: &'a str,
-    front: &'a str,
-    back: &'a str,
+    left: &'a Path,
+    right: &'a Path,
+    up: &'a Path,
+    down: &'a Path,
+    front: &'a Path,
+    back: &'a Path,
 }
 
 struct SkyBoxImageGroup {
