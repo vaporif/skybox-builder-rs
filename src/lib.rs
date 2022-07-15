@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::Error,
-    path::{Path, PathBuf},
+    path::{self, PathBuf},
 };
 
 pub fn merge_all_files(path: &str) -> Result<(), Error> {
@@ -18,36 +18,83 @@ fn get_file_paths(mut dir_path: &str) -> Result<Vec<PathBuf>, Error> {
         dir_path = &"./";
     }
 
-    let paths = fs::read_dir(dir_path)?
-        .into_iter()
-        .map(|f| f.unwrap().path())
+    let rd = fs::read_dir(dir_path)?;
+
+    let paths = rd
+        .filter_map(Result::ok)
+        .map(|f| f.path())
+        .filter(|f| f.is_file())
+        .filter(|f| f.extension().unwrap_or_default() == "png")
         .collect();
 
     Ok(paths)
 }
 
 fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
-    unimplemented!()
+    if paths.len() > 6 {
+        panic!("Single skybox is supported");
+    }
+
+    let mut skybox = SkyBoxFiles::default();
+
+    for path in paths {
+        match path.file_name().and_then(|f| f.to_str()) {
+            Some(p) if p.ends_with("left.png") => skybox.left = Some(path),
+            Some(p) if p.ends_with("right.png") => skybox.right = Some(path),
+            Some(p) if p.ends_with("up.png") => skybox.up = Some(path),
+            Some(p) if p.ends_with("down.png") => skybox.down = Some(path),
+            Some(p) if p.ends_with("front.png") => skybox.front = Some(path),
+            Some(p) if p.ends_with("back.png") => skybox.back = Some(path),
+            Some(_) => println!("file {:?} has incorrect naming", path.file_name()),
+            None => continue
+        }
+    }
+
+    vec![skybox]
 }
 
 #[derive(Debug, PartialEq)]
 struct SkyBoxFiles {
-    left: PathBuf,
-    right: PathBuf,
-    up: PathBuf,
-    down: PathBuf,
-    front: PathBuf,
-    back: PathBuf,
+    left: Option<PathBuf>,
+    right: Option<PathBuf>,
+    up: Option<PathBuf>,
+    down: Option<PathBuf>,
+    front: Option<PathBuf>,
+    back: Option<PathBuf>,
 }
 
 impl SkyBoxFiles {
     fn merge(self) {
-        let left = image::open(self.left).unwrap();
-        let right = image::open(self.right).unwrap();
-        let up = image::open(self.up).unwrap();
-        let down = image::open(self.down).unwrap();
-        let front = image::open(self.front).unwrap();
-        let back = image::open(self.back).unwrap();
+        if let None = self
+            .left
+            .as_ref()
+            .and(self.right.as_ref())
+            .and(self.up.as_ref())
+            .and(self.down.as_ref())
+            .and(self.front.as_ref())
+            .and(self.back.as_ref())
+        {
+            println!("Not all files are present for merging");
+        }
+        let left = image::open(self.left.unwrap()).expect("can't open file for read");
+        let right = image::open(self.right.unwrap()).expect("can't open file for read");
+        let up = image::open(self.up.unwrap()).expect("can't open file for read");
+        let down = image::open(self.down.unwrap()).expect("can't open file for read");
+        let front = image::open(self.front.unwrap()).expect("can't open file for read");
+        let back = image::open(&self.back.unwrap()).expect("can't open file for read");
+    }
+}
+
+impl Default for SkyBoxFiles {
+    fn default() -> SkyBoxFiles {
+        SkyBoxFiles {
+            left: None,
+            right: None,
+            up: None,
+            down: None,
+            front: None,
+            back: None,
+        }
     }
 }
 
@@ -59,12 +106,14 @@ mod tests {
 
     #[test]
     fn get_skyboxes_group_single_file() {
-        let l_path = PathBuf::from("skybox_01a_left");
-        let r_path = PathBuf::from("skybox_01a_right");
-        let u_path = PathBuf::from("skybox_01a_up");
-        let d_path = PathBuf::from("skybox_01a_down");
-        let f_path = PathBuf::from("skybox_01a_front");
-        let b_path = PathBuf::from("skybox_01a_back");
+        let l_path = PathBuf::from("skybox_01a_left.png");
+        let r_path = PathBuf::from("skybox_01a_right.png");
+        let u_path = PathBuf::from("skybox_01a_up.png");
+        let d_path = PathBuf::from("skybox_01a_down.png");
+        let f_path = PathBuf::from("skybox_01a_front.png");
+        let b_path = PathBuf::from("skybox_01a_back.png");
+
+        //assert!(l_path.file_name().unwrap().to_owned().into_string().unwrap().ends_with("left.png"));
 
         let paths = vec![
             l_path.clone(),
@@ -76,12 +125,12 @@ mod tests {
         ];
 
         let expected = SkyBoxFiles {
-            left: l_path,
-            right: r_path,
-            up: u_path,
-            down: d_path,
-            front: f_path,
-            back: b_path,
+            left: Some(l_path),
+            right: Some(r_path),
+            up: Some(u_path),
+            down: Some(d_path),
+            front: Some(f_path),
+            back: Some(b_path),
         };
 
         let skyboxes = get_skyboxes(paths);
