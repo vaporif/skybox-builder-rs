@@ -4,16 +4,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use image::DynamicImage;
-
 pub fn merge_all_files(path: &str) -> Result<(), Error> {
     let file_paths = get_file_paths(path)?;
-    let skyboxes = get_skyboxes(file_paths.iter().map(|f| f.as_path()).collect());
-
-    skyboxes
-        .iter()
-        .map(|f| SkyBoxImageGroup::new(f))
-        .for_each(|f| f.merge());
+    for skybox in get_skyboxes(file_paths) {
+        skybox.merge();
+    }
 
     Ok(())
 }
@@ -31,42 +26,29 @@ fn get_file_paths(mut dir_path: &str) -> Result<Vec<PathBuf>, Error> {
     Ok(paths)
 }
 
-fn get_skyboxes(paths: Vec<&Path>) -> Vec<SkyBoxFilePath<'static>> {
+fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
     unimplemented!()
 }
 
 #[derive(Debug, PartialEq)]
-struct SkyBoxFilePath<'a> {
-    left: &'a Path,
-    right: &'a Path,
-    up: &'a Path,
-    down: &'a Path,
-    front: &'a Path,
-    back: &'a Path,
+struct SkyBoxFiles {
+    left: PathBuf,
+    right: PathBuf,
+    up: PathBuf,
+    down: PathBuf,
+    front: PathBuf,
+    back: PathBuf,
 }
 
-struct SkyBoxImageGroup {
-    left: DynamicImage,
-    right: DynamicImage,
-    up: DynamicImage,
-    down: DynamicImage,
-    front: DynamicImage,
-    back: DynamicImage,
-}
-
-impl SkyBoxImageGroup {
-    fn new(file_group: &SkyBoxFilePath) -> SkyBoxImageGroup {
-        Self {
-            left: image::open(file_group.left).unwrap(),
-            right: image::open(file_group.right).unwrap(),
-            up: image::open(file_group.up).unwrap(),
-            down: image::open(file_group.down).unwrap(),
-            front: image::open(file_group.front).unwrap(),
-            back: image::open(file_group.back).unwrap(),
-        }
+impl SkyBoxFiles {
+    fn merge(self) {
+        let left = image::open(self.left).unwrap();
+        let right = image::open(self.right).unwrap();
+        let up = image::open(self.up).unwrap();
+        let down = image::open(self.down).unwrap();
+        let front = image::open(self.front).unwrap();
+        let back = image::open(self.back).unwrap();
     }
-
-    fn merge(self) {}
 }
 
 #[cfg(test)]
@@ -85,21 +67,21 @@ mod tests {
         let b_path = PathBuf::from("skybox_01a_back");
 
         let paths = vec![
-            l_path.as_path(),
-            r_path.as_path(),
-            u_path.as_path(),
-            d_path.as_path(),
-            f_path.as_path(),
-            b_path.as_path(),
+            l_path.clone(),
+            r_path.clone(),
+            u_path.clone(),
+            d_path.clone(),
+            f_path.clone(),
+            b_path.clone(),
         ];
 
-        let expected = SkyBoxFilePath {
-            left: l_path.as_path(),
-            right: r_path.as_path(),
-            up: u_path.as_path(),
-            down: d_path.as_path(),
-            front: f_path.as_path(),
-            back: b_path.as_path(),
+        let expected = SkyBoxFiles {
+            left: l_path,
+            right: r_path,
+            up: u_path,
+            down: d_path,
+            front: f_path,
+            back: b_path,
         };
 
         let skyboxes = get_skyboxes(paths);
