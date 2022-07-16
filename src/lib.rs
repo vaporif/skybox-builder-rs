@@ -4,6 +4,8 @@ use std::{
     path::{self, PathBuf},
 };
 
+use image::{GenericImageView, DynamicImage, ImageBuffer, RgbImage, GenericImage, Rgba};
+
 pub fn merge_all_files(path: &str) -> Result<(), Error> {
     let file_paths = get_file_paths(path)?;
     for skybox in get_skyboxes(file_paths) {
@@ -35,66 +37,85 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
         panic!("Single skybox is supported");
     }
 
-    let mut skybox = SkyBoxFiles::default();
-
-    for path in paths {
-        match path.file_name().and_then(|f| f.to_str()) {
-            Some(p) if p.ends_with("left.png") => skybox.left = Some(path),
-            Some(p) if p.ends_with("right.png") => skybox.right = Some(path),
-            Some(p) if p.ends_with("up.png") => skybox.up = Some(path),
-            Some(p) if p.ends_with("down.png") => skybox.down = Some(path),
-            Some(p) if p.ends_with("front.png") => skybox.front = Some(path),
-            Some(p) if p.ends_with("back.png") => skybox.back = Some(path),
-            Some(_) => println!("file {:?} has incorrect naming", path.file_name()),
-            None => continue
-        }
+    if paths.len() < 6 {
+        panic!("Ensure all skybox tiles are present");
     }
 
-    vec![skybox]
+    let tiles: Vec<Option<SkyboxTile>> = paths.into_iter().map(|path| {
+        match path.file_name().and_then(|f| f.to_str()) {
+            Some(p) if p.ends_with("left.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Left}),
+            Some(p) if p.ends_with("right.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Right}),
+            Some(p) if p.ends_with("up.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Up}),
+            Some(p) if p.ends_with("down.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Down}),
+            Some(p) if p.ends_with("front.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Front}),
+            Some(p) if p.ends_with("back.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Back}),
+            Some(_) | None => None
+        }
+    }).collect();
+
+    vec![SkyBoxFiles{tiles}]
 }
 
-#[derive(Debug, PartialEq)]
 struct SkyBoxFiles {
-    left: Option<PathBuf>,
-    right: Option<PathBuf>,
-    up: Option<PathBuf>,
-    down: Option<PathBuf>,
-    front: Option<PathBuf>,
-    back: Option<PathBuf>,
+    tiles:[Option<SkyboxTile>; 6]
+}
+
+#[derive(PartialEq)]
+struct SkyboxTile {
+    path: PathBuf,
+    position: SkyboxTilePosition
+}
+
+impl SkyboxTile {
+    fn read_tile(self) -> (DynamicImage, u32, u32) {
+        let pic = image::open(self.path).unwrap();
+        let (width, height) = pic.dimensions();
+        (pic, width, height)
+    }
+}
+
+#[derive(PartialEq, Debug)]
+enum SkyboxTilePosition {
+    Left,
+    Right,
+    Up,
+    Down,
+    Front,
+    Back
 }
 
 impl SkyBoxFiles {
     fn merge(self) {
-        if let None = self
-            .left
-            .as_ref()
-            .and(self.right.as_ref())
-            .and(self.up.as_ref())
-            .and(self.down.as_ref())
-            .and(self.front.as_ref())
-            .and(self.back.as_ref())
-        {
-            println!("Not all files are present for merging");
+        if self.tiles.contains(&Option::None) {
+            eprintln!("Not all tiles are set for skybox");
         }
-        let left = image::open(self.left.unwrap()).expect("can't open file for read");
-        let right = image::open(self.right.unwrap()).expect("can't open file for read");
-        let up = image::open(self.up.unwrap()).expect("can't open file for read");
-        let down = image::open(self.down.unwrap()).expect("can't open file for read");
-        let front = image::open(self.front.unwrap()).expect("can't open file for read");
-        let back = image::open(&self.back.unwrap()).expect("can't open file for read");
-    }
-}
 
-impl Default for SkyBoxFiles {
-    fn default() -> SkyBoxFiles {
-        SkyBoxFiles {
-            left: None,
-            right: None,
-            up: None,
-            down: None,
-            front: None,
-            back: None,
+        let mut result_file: Option<ImageBuffer<Rgba<u8>, Vec<u8>>> = Option::None;
+        let mut dimensions:Option<(u32, u32)> = Option::None;
+
+        for tile in self.tiles.into_iter().filter_map(|f| f) {
+            let pic = image::open(tile.path).unwrap();
+            if result_file == Option::None {
+                let (width, height) = pic.dimensions();
+                dimensions = Some((width, height));
+                result_file = Some(ImageBuffer::new(width*4, height*3));
+            }
+
+            let (width, height) = dimensions.unwrap();
+
+            let result_file = result_file.unwrap();
+
+            match tile.position {
+                SkyboxTilePosition::Left => result_file.copy_from(&pic, 0, height),
+                SkyboxTilePosition::Right => result_file.copy_from(&pic, width*2, height),
+                SkyboxTilePosition::Up => result_file.copy_from(&pic, width, 0),
+                SkyboxTilePosition::Down => result_file.copy_from(&pic, width, height*2),
+                SkyboxTilePosition::Front => result_file.copy_from(&pic, width, height),
+                SkyboxTilePosition::Back => result_file.copy_from(&pic, width*3, height)
+            };
         }
+
+        result_file.unwrap().save_with_format("skybox.png", image::ImageFormat::Png).expect("File saved");
     }
 }
 
@@ -124,19 +145,19 @@ mod tests {
             b_path.clone(),
         ];
 
-        let expected = SkyBoxFiles {
-            left: Some(l_path),
-            right: Some(r_path),
-            up: Some(u_path),
-            down: Some(d_path),
-            front: Some(f_path),
-            back: Some(b_path),
-        };
+        // let expected = SkyBoxFiles {
+        //     left: Some(l_path),
+        //     right: Some(r_path),
+        //     up: Some(u_path),
+        //     down: Some(d_path),
+        //     front: Some(f_path),
+        //     back: Some(b_path),
+        // };
 
-        let skyboxes = get_skyboxes(paths);
+        // let skyboxes = get_skyboxes(paths);
 
-        assert!(skyboxes.len() == 1);
+        // assert!(skyboxes.len() == 1);
 
-        assert_eq!(*skyboxes.first().unwrap(), expected);
+        // assert_eq!(*skyboxes.first().unwrap(), expected);
     }
 }
