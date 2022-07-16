@@ -39,7 +39,8 @@ jobs:
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
-          command: test --features=testable
+          command: test
+          args: --features=testable
   fmt:
     name: Rustfmt
     runs-on: ubuntu-latest
