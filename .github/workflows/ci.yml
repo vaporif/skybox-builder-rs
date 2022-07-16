@@ -14,15 +14,6 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:12
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
-          POSTGRES_DB: PotatoeS123
-        ports:
-          - 5432:5432
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
