@@ -2,9 +2,13 @@ use std::{fs, io::Error, path::PathBuf};
 
 use image::{GenericImage, GenericImageView, ImageBuffer};
 
+const SKYBOX_TILES_AMOUNT: usize = 6;
+
 pub fn merge_all_files() -> Result<(), Error> {
     let file_paths = get_file_paths()?;
     for skybox in get_skyboxes(file_paths) {
+        println!("Processing skybox tiles");
+        dbg!(&skybox);
         skybox.merge();
     }
 
@@ -21,19 +25,13 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
         .filter(|f| f.extension().unwrap_or_default() == "png")
         .collect();
 
-    for path in paths.iter() {
-        println!("{:?}", &path);
-    }
-
     Ok(paths)
 }
 
 fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
-    if paths.len() > 6 {
-        panic!("Single skybox is supported");
-    }
-
-    if paths.len() < 6 {
+    if paths.len() > SKYBOX_TILES_AMOUNT {
+        panic!("Directory should have only {} tile files for now as merging of single skybox is supported", SKYBOX_TILES_AMOUNT);
+    } else if paths.len() < SKYBOX_TILES_AMOUNT {
         panic!("Ensure all skybox tiles are present");
     }
 
@@ -66,17 +64,18 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
             }),
             Some(_) | None => None,
         })
-        .filter_map(|f| f)
+        .flatten()
         .collect();
 
     vec![SkyBoxFiles { tiles }]
 }
 
+#[derive(Debug)]
 struct SkyBoxFiles {
     tiles: Vec<SkyboxTile>,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 struct SkyboxTile {
     path: PathBuf,
     position: SkyboxTilePosition,
@@ -94,8 +93,9 @@ enum SkyboxTilePosition {
 
 impl SkyBoxFiles {
     fn merge(self) {
-        if self.tiles.len() != 6 {
-            eprintln!("Not all tiles are set for skybox");
+        if self.tiles.len() != SKYBOX_TILES_AMOUNT {
+            eprintln!("Not all tiles are set for skybox. Skipping skybox");
+            return;
         }
 
         let first_file = image::open(&self.tiles[0].path).expect("file opened for merge");
