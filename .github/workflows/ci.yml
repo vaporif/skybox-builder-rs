@@ -2,15 +2,10 @@ name: Rust
 
 on: 
   push:
-    paths-ignore:
-      - '*.md'
-      - 'LICENSE'
-      - '.gitignore'
-  pull_request:
-    paths-ignore:
-      - '*.md'
-      - 'LICENSE'
-      - '.gitignore'
+    paths:
+      - 'src/**'
+      - 'Cargo.toml'
+      - '.github/workflows/ci.yml'
 
 env:
   CARGO_TERM_COLOR: always
