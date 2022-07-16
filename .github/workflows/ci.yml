@@ -1,7 +1,7 @@
 name: fmt/clippy/test
 
 on: 
-  pull_request:
+  push:
     paths:
       - 'src/**'
       - 'Cargo.toml'
