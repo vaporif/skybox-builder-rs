@@ -9,11 +9,10 @@ fn main() {
 }
 
 fn run() -> Result<(), Error> {
-    let args: Vec<String> = env::args().collect();
-    match args.len() {
-        0 => merge_all_files("")?,
-        1 => merge_all_files(&args[0])?,
-        _ => panic!("Either enter images to merge path or run without args"),
+    let _args: Vec<String> = env::args().collect();
+    match env::args().count() {
+        1 => merge_all_files()?,
+        _ => panic!("Params not supported"),
     }
 
     Ok(())

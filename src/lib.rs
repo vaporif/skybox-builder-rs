@@ -1,13 +1,9 @@
-use std::{
-    fs,
-    io::Error,
-    path::PathBuf,
-};
+use std::{fs, io::Error, path::PathBuf};
 
-use image::{GenericImageView, DynamicImage, ImageBuffer, RgbImage, GenericImage, Rgba};
+use image::{GenericImage, GenericImageView, ImageBuffer};
 
-pub fn merge_all_files(path: &str) -> Result<(), Error> {
-    let file_paths = get_file_paths(path)?;
+pub fn merge_all_files() -> Result<(), Error> {
+    let file_paths = get_file_paths()?;
     for skybox in get_skyboxes(file_paths) {
         skybox.merge();
     }
@@ -15,19 +11,19 @@ pub fn merge_all_files(path: &str) -> Result<(), Error> {
     Ok(())
 }
 
-fn get_file_paths(mut dir_path: &str) -> Result<Vec<PathBuf>, Error> {
-    if dir_path.is_empty() {
-        dir_path = &"./";
-    }
+fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
+    let rd = fs::read_dir(".")?;
 
-    let rd = fs::read_dir(dir_path)?;
-
-    let paths = rd
+    let paths: Vec<PathBuf> = rd
         .filter_map(Result::ok)
         .map(|f| f.path())
         .filter(|f| f.is_file())
         .filter(|f| f.extension().unwrap_or_default() == "png")
         .collect();
+
+    for path in paths.iter() {
+        println!("{:?}", &path);
+    }
 
     Ok(paths)
 }
@@ -41,37 +37,49 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
         panic!("Ensure all skybox tiles are present");
     }
 
-    let tiles: Vec<SkyboxTile> = paths.into_iter().map(|path| {
-        match path.file_name().and_then(|f| f.to_str()) {
-            Some(p) if p.ends_with("left.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Left}),
-            Some(p) if p.ends_with("right.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Right}),
-            Some(p) if p.ends_with("up.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Up}),
-            Some(p) if p.ends_with("down.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Down}),
-            Some(p) if p.ends_with("front.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Front}),
-            Some(p) if p.ends_with("back.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Back}),
-            Some(_) | None => None
-        }
-    }).filter_map(|f| f).collect();
+    let tiles: Vec<SkyboxTile> = paths
+        .into_iter()
+        .map(|path| match path.file_name().and_then(|f| f.to_str()) {
+            Some(p) if p.ends_with("left.png") => Some(SkyboxTile {
+                path,
+                position: SkyboxTilePosition::Left,
+            }),
+            Some(p) if p.ends_with("right.png") => Some(SkyboxTile {
+                path,
+                position: SkyboxTilePosition::Right,
+            }),
+            Some(p) if p.ends_with("up.png") => Some(SkyboxTile {
+                path,
+                position: SkyboxTilePosition::Up,
+            }),
+            Some(p) if p.ends_with("down.png") => Some(SkyboxTile {
+                path,
+                position: SkyboxTilePosition::Down,
+            }),
+            Some(p) if p.ends_with("front.png") => Some(SkyboxTile {
+                path,
+                position: SkyboxTilePosition::Front,
+            }),
+            Some(p) if p.ends_with("back.png") => Some(SkyboxTile {
+                path,
+                position: SkyboxTilePosition::Back,
+            }),
+            Some(_) | None => None,
+        })
+        .filter_map(|f| f)
+        .collect();
 
-    vec![SkyBoxFiles{tiles}]
+    vec![SkyBoxFiles { tiles }]
 }
 
 struct SkyBoxFiles {
-    tiles:Vec<SkyboxTile>
+    tiles: Vec<SkyboxTile>,
 }
 
 #[derive(PartialEq)]
 struct SkyboxTile {
     path: PathBuf,
-    position: SkyboxTilePosition
-}
-
-impl SkyboxTile {
-    fn read_tile(self) -> (DynamicImage, u32, u32) {
-        let pic = image::open(self.path).unwrap();
-        let (width, height) = pic.dimensions();
-        (pic, width, height)
-    }
+    position: SkyboxTilePosition,
 }
 
 #[derive(PartialEq, Debug)]
@@ -81,7 +89,7 @@ enum SkyboxTilePosition {
     Up,
     Down,
     Front,
-    Back
+    Back,
 }
 
 impl SkyBoxFiles {
@@ -90,32 +98,39 @@ impl SkyBoxFiles {
             eprintln!("Not all tiles are set for skybox");
         }
 
-        let mut result_file: Option<ImageBuffer<Rgba<u8>, Vec<u8>>> = Option::None;
-        let mut dimensions:Option<(u32, u32)> = Option::None;
+        let first_file = image::open(&self.tiles[0].path).expect("file opened for merge");
+        let (width, height) = first_file.dimensions();
+
+        let mut result_file = ImageBuffer::new(width * 4, height * 3);
 
         for tile in self.tiles.into_iter() {
             let pic = image::open(tile.path).unwrap();
-            if result_file == Option::None {
-                let (width, height) = pic.dimensions();
-                dimensions = Some((width, height));
-                result_file = Some(ImageBuffer::new(width*4, height*3));
-            }
-
-            let (width, height) = dimensions.unwrap();
-
-            let mut file = result_file.unwrap();
 
             match tile.position {
-                SkyboxTilePosition::Left => file.copy_from(&pic, 0, height),
-                SkyboxTilePosition::Right => file.copy_from(&pic, width*2, height),
-                SkyboxTilePosition::Up => file.copy_from(&pic, width, 0),
-                SkyboxTilePosition::Down => file.copy_from(&pic, width, height*2),
-                SkyboxTilePosition::Front => file.copy_from(&pic, width, height),
-                SkyboxTilePosition::Back => file.copy_from(&pic, width*3, height)
+                SkyboxTilePosition::Left => result_file
+                    .copy_from(&pic, 0, height)
+                    .expect("copy success"),
+                SkyboxTilePosition::Right => result_file
+                    .copy_from(&pic, width * 2, height)
+                    .expect("copy success"),
+                SkyboxTilePosition::Up => {
+                    result_file.copy_from(&pic, width, 0).expect("copy success")
+                }
+                SkyboxTilePosition::Down => result_file
+                    .copy_from(&pic, width, height * 2)
+                    .expect("copy success"),
+                SkyboxTilePosition::Front => result_file
+                    .copy_from(&pic, width, height)
+                    .expect("copy success"),
+                SkyboxTilePosition::Back => result_file
+                    .copy_from(&pic, width * 3, height)
+                    .expect("copy success"),
             };
         }
 
-        result_file.unwrap().save_with_format("skybox.png", image::ImageFormat::Png).expect("File saved");
+        result_file
+            .save_with_format("skybox.png", image::ImageFormat::Png)
+            .expect("File saved");
     }
 }
 
