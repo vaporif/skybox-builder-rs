@@ -1,4 +1,4 @@
-use std::{fs, io::Error, path::PathBuf};
+use std::{fs, io::Error, path::PathBuf, env};
 
 use image::{GenericImage, GenericImageView, ImageBuffer};
 
@@ -16,7 +16,11 @@ pub fn merge_all_files() -> Result<(), Error> {
 }
 
 fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
-    let rd = fs::read_dir(".")?;
+    let path = env::current_dir().expect("Should be able to read current directory");
+
+    println!("Processign dir {}", path.display());
+
+    let rd = fs::read_dir(path)?;
 
     let paths: Vec<PathBuf> = rd
         .filter_map(Result::ok)
@@ -24,6 +28,8 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
         .filter(|f| f.is_file())
         .filter(|f| f.extension().unwrap_or_default() == "png")
         .collect();
+
+    print!("Found {} files", paths.len());
 
     Ok(paths)
 }
