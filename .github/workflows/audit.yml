@@ -4,10 +4,6 @@ on:
     paths:
       - '**/Cargo.toml'
       - '**/Cargo.lock'
-    paths-ignore:
-      - '*.md'
-      - 'LICENSE'
-      - '.gitignore'
 jobs:
   security_audit:
     runs-on: ubuntu-latest
