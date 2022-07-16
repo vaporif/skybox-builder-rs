@@ -161,7 +161,6 @@ mod tests {
         assert_contains_exactly!(skyboxes, vec![expected_skybox_tiles]);
     }
 
-    #[test]
     fn get_skyboxes_multiple_files() {
         let prefix_1 = String::from("skybox_01a");
         let prefix_2 = String::from("skybox_02a");
