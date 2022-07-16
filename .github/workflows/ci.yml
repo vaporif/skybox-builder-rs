@@ -1,4 +1,4 @@
-name: Rust
+name: fmt/clippy/test
 
 on: 
   pull_request:
