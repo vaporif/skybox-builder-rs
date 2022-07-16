@@ -1,7 +1,7 @@
 name: Rust
 
 on: 
-  push:
+  pull_request:
     paths:
       - 'src/**'
       - 'Cargo.toml'
