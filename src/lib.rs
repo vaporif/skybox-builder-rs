@@ -73,7 +73,7 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
     vec![SkyBoxFiles { tiles }]
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct SkyBoxFiles {
     tiles: Vec<SkyboxTile>,
 }
@@ -147,7 +147,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_skyboxes_group_single_file() {
+    fn get_skyboxes_single_file() {
         let l_path = PathBuf::from("skybox_01a_left.png");
         let r_path = PathBuf::from("skybox_01a_right.png");
         let u_path = PathBuf::from("skybox_01a_up.png");
@@ -166,19 +166,39 @@ mod tests {
             b_path.clone(),
         ];
 
-        // let expected = SkyBoxFiles {
-        //     left: Some(l_path),
-        //     right: Some(r_path),
-        //     up: Some(u_path),
-        //     down: Some(d_path),
-        //     front: Some(f_path),
-        //     back: Some(b_path),
-        // };
+        let expected = SkyBoxFiles {
+            tiles: vec![
+                SkyboxTile {
+                    path: l_path,
+                    position: SkyboxTilePosition::Left,
+                },
+                SkyboxTile {
+                    path: r_path,
+                    position: SkyboxTilePosition::Right,
+                },
+                SkyboxTile {
+                    path: u_path,
+                    position: SkyboxTilePosition::Up,
+                },
+                SkyboxTile {
+                    path: d_path,
+                    position: SkyboxTilePosition::Down,
+                },
+                SkyboxTile {
+                    path: f_path,
+                    position: SkyboxTilePosition::Front,
+                },
+                SkyboxTile {
+                    path: b_path,
+                    position: SkyboxTilePosition::Back,
+                },
+            ],
+        };
 
-        // let skyboxes = get_skyboxes(paths);
+        let skyboxes = get_skyboxes(paths);
 
-        // assert!(skyboxes.len() == 1);
+        assert!(skyboxes.len() == 1);
 
-        // assert_eq!(*skyboxes.first().unwrap(), expected);
+        assert_eq!(*skyboxes.first().unwrap(), expected);
     }
 }
