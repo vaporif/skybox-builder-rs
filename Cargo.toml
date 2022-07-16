@@ -5,5 +5,11 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+testable=[]
+
 [dependencies]
 image = { version = "0.24.2", default-features = false, features = ["png"] }
+
+[dev-dependencies]
+assertx = "1.1.7"

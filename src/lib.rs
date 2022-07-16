@@ -74,17 +74,20 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxTiles> {
 }
 
 #[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "testable", derive(Clone))]
 struct SkyBoxTiles {
     tiles: Vec<SkyboxTile>,
 }
 
 #[derive(PartialEq, Debug)]
+#[cfg_attr(feature = "testable", derive(Clone))]
 struct SkyboxTile {
     path: PathBuf,
     position: SkyboxTilePosition,
 }
 
 #[derive(PartialEq, Debug)]
+#[cfg_attr(feature = "testable", derive(Clone))]
 enum SkyboxTilePosition {
     Left,
     Right,
@@ -143,6 +146,7 @@ impl SkyBoxTiles {
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
+    use assertx::*;
 
     use super::*;
 
@@ -154,14 +158,21 @@ mod tests {
 
         let skyboxes = get_skyboxes(paths);
 
-        assert!(skyboxes.len() == 1);
-
-        assert_eq!(*skyboxes.first().unwrap(), expected_skybox_tiles);
+        assert_contains_exactly!(skyboxes, vec![expected_skybox_tiles]);
     }
 
     #[test]
     fn get_skyboxes_multiple_files() {
-        assert!(true);
+        let prefix_1 = String::from("skybox_01a");
+        let prefix_2 = String::from("skybox_02a");
+        let expected_skybox_tiles_1 = generate_skybox_tiles(&prefix_1);
+        let expected_skybox_tiles_2 = generate_skybox_tiles(&prefix_2);
+
+        let paths: Vec<PathBuf> = expected_skybox_tiles_1.tiles.iter().chain(expected_skybox_tiles_2.tiles.iter()).filter(|f| f.path.starts_with(&prefix_1)).map(|f| f.path.clone()).collect();
+
+        let skyboxes = get_skyboxes(paths);
+
+        assert_contains_exactly!(skyboxes, vec![expected_skybox_tiles_1, expected_skybox_tiles_2]);
     }
 
     fn generate_skybox_tiles(prefix: &str) -> SkyBoxTiles {
