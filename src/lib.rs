@@ -40,7 +40,7 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxTiles> {
 
     let tiles: Vec<SkyboxTile> = paths
         .into_iter()
-        .map(|path| match path.file_name().and_then(|f| f.to_str()) {
+        .filter_map(|path| match path.file_name().and_then(|f| f.to_str()) {
             Some(p) if p.ends_with("left.png") => Some(SkyboxTile {
                 path,
                 position: SkyboxTilePosition::Left,
@@ -67,7 +67,6 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxTiles> {
             }),
             Some(_) | None => None,
         })
-        .flatten()
         .collect();
 
     vec![SkyBoxTiles { tiles }]
@@ -165,6 +164,8 @@ mod tests {
         assert_contains_exactly!(skyboxes, vec![expected_skybox_tiles]);
     }
 
+    #[test]
+    #[ignore]
     fn get_skyboxes_multiple_files() {
         let prefix_1 = String::from("skybox_01a");
         let prefix_2 = String::from("skybox_02a");
