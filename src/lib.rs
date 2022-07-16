@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::Error,
-    path::{self, PathBuf},
+    path::PathBuf,
 };
 
 use image::{GenericImageView, DynamicImage, ImageBuffer, RgbImage, GenericImage, Rgba};
@@ -41,7 +41,7 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
         panic!("Ensure all skybox tiles are present");
     }
 
-    let tiles: Vec<Option<SkyboxTile>> = paths.into_iter().map(|path| {
+    let tiles: Vec<SkyboxTile> = paths.into_iter().map(|path| {
         match path.file_name().and_then(|f| f.to_str()) {
             Some(p) if p.ends_with("left.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Left}),
             Some(p) if p.ends_with("right.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Right}),
@@ -51,13 +51,13 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
             Some(p) if p.ends_with("back.png") => Some(SkyboxTile {path, position: SkyboxTilePosition::Back}),
             Some(_) | None => None
         }
-    }).collect();
+    }).filter_map(|f| f).collect();
 
     vec![SkyBoxFiles{tiles}]
 }
 
 struct SkyBoxFiles {
-    tiles:[Option<SkyboxTile>; 6]
+    tiles:Vec<SkyboxTile>
 }
 
 #[derive(PartialEq)]
@@ -86,16 +86,16 @@ enum SkyboxTilePosition {
 
 impl SkyBoxFiles {
     fn merge(self) {
-        if self.tiles.contains(&Option::None) {
+        if self.tiles.len() != 6 {
             eprintln!("Not all tiles are set for skybox");
         }
 
         let mut result_file: Option<ImageBuffer<Rgba<u8>, Vec<u8>>> = Option::None;
         let mut dimensions:Option<(u32, u32)> = Option::None;
 
-        for tile in self.tiles.into_iter().filter_map(|f| f) {
+        for tile in self.tiles.into_iter() {
             let pic = image::open(tile.path).unwrap();
-            if result_file == Option::None {
+            if result_file.as_ref() == Option::None {
                 let (width, height) = pic.dimensions();
                 dimensions = Some((width, height));
                 result_file = Some(ImageBuffer::new(width*4, height*3));
