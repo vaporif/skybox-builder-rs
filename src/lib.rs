@@ -31,7 +31,7 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
     Ok(paths)
 }
 
-fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
+fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxTiles> {
     match paths.len() {
         s if s > SKYBOX_TILES_AMOUNT => panic!("Directory should have only {} tile files for now as merging of single skybox is supported", SKYBOX_TILES_AMOUNT),
         s if s < SKYBOX_TILES_AMOUNT => panic!("Ensure all skybox tiles are present"),
@@ -70,11 +70,11 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
         .flatten()
         .collect();
 
-    vec![SkyBoxFiles { tiles }]
+    vec![SkyBoxTiles { tiles }]
 }
 
 #[derive(Debug, PartialEq)]
-struct SkyBoxFiles {
+struct SkyBoxTiles {
     tiles: Vec<SkyboxTile>,
 }
 
@@ -94,7 +94,7 @@ enum SkyboxTilePosition {
     Back,
 }
 
-impl SkyBoxFiles {
+impl SkyBoxTiles {
     fn merge(self) {
         if self.tiles.len() != SKYBOX_TILES_AMOUNT {
             eprintln!("Not all tiles are set for skybox. Skipping skybox");
@@ -148,57 +148,30 @@ mod tests {
 
     #[test]
     fn get_skyboxes_single_file() {
-        let l_path = PathBuf::from("skybox_01a_left.png");
-        let r_path = PathBuf::from("skybox_01a_right.png");
-        let u_path = PathBuf::from("skybox_01a_up.png");
-        let d_path = PathBuf::from("skybox_01a_down.png");
-        let f_path = PathBuf::from("skybox_01a_front.png");
-        let b_path = PathBuf::from("skybox_01a_back.png");
+        let expected_skybox_tiles = generate_skybox_tiles("skybox_01a");
 
-        //assert!(l_path.file_name().unwrap().to_owned().into_string().unwrap().ends_with("left.png"));
-
-        let paths = vec![
-            l_path.clone(),
-            r_path.clone(),
-            u_path.clone(),
-            d_path.clone(),
-            f_path.clone(),
-            b_path.clone(),
-        ];
-
-        let expected = SkyBoxFiles {
-            tiles: vec![
-                SkyboxTile {
-                    path: l_path,
-                    position: SkyboxTilePosition::Left,
-                },
-                SkyboxTile {
-                    path: r_path,
-                    position: SkyboxTilePosition::Right,
-                },
-                SkyboxTile {
-                    path: u_path,
-                    position: SkyboxTilePosition::Up,
-                },
-                SkyboxTile {
-                    path: d_path,
-                    position: SkyboxTilePosition::Down,
-                },
-                SkyboxTile {
-                    path: f_path,
-                    position: SkyboxTilePosition::Front,
-                },
-                SkyboxTile {
-                    path: b_path,
-                    position: SkyboxTilePosition::Back,
-                },
-            ],
-        };
+        let paths = expected_skybox_tiles.tiles.iter().map(|f| f.path.clone()).collect();
 
         let skyboxes = get_skyboxes(paths);
 
         assert!(skyboxes.len() == 1);
 
-        assert_eq!(*skyboxes.first().unwrap(), expected);
+        assert_eq!(*skyboxes.first().unwrap(), expected_skybox_tiles);
+    }
+
+    #[test]
+    fn get_skyboxes_multiple_files() {
+        assert!(true);
+    }
+
+    fn generate_skybox_tiles(prefix: &str) -> SkyBoxTiles {
+        let left = SkyboxTile { path: PathBuf::from(format!("{}_left.png", prefix)), position: SkyboxTilePosition::Left};
+        let rigth = SkyboxTile { path: PathBuf::from(format!("{}_right.png", prefix)), position: SkyboxTilePosition::Right};
+        let up = SkyboxTile { path: PathBuf::from(format!("{}_up.png", prefix)), position: SkyboxTilePosition::Up};
+        let down = SkyboxTile { path: PathBuf::from(format!("{}_down.png", prefix)), position: SkyboxTilePosition::Down};
+        let front = SkyboxTile { path: PathBuf::from(format!("{}_front.png", prefix)), position: SkyboxTilePosition::Front};
+        let back = SkyboxTile { path: PathBuf::from(format!("{}_back.png", prefix)), position: SkyboxTilePosition::Back};
+
+        SkyBoxTiles { tiles: vec![left, rigth, up, down, front, back] }
     }
 }
