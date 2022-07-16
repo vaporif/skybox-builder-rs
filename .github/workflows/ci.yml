@@ -6,6 +6,11 @@ on:
       - '*.md'
       - 'LICENSE'
       - '.gitignore'
+  pull_request:
+    paths-ignore:
+      - '*.md'
+      - 'LICENSE'
+      - '.gitignore'
 
 env:
   CARGO_TERM_COLOR: always
