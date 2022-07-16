@@ -95,7 +95,7 @@ impl SkyBoxFiles {
 
         for tile in self.tiles.into_iter() {
             let pic = image::open(tile.path).unwrap();
-            if result_file.as_ref() == Option::None {
+            if result_file == Option::None {
                 let (width, height) = pic.dimensions();
                 dimensions = Some((width, height));
                 result_file = Some(ImageBuffer::new(width*4, height*3));
@@ -103,15 +103,15 @@ impl SkyBoxFiles {
 
             let (width, height) = dimensions.unwrap();
 
-            let result_file = result_file.unwrap();
+            let mut file = result_file.unwrap();
 
             match tile.position {
-                SkyboxTilePosition::Left => result_file.copy_from(&pic, 0, height),
-                SkyboxTilePosition::Right => result_file.copy_from(&pic, width*2, height),
-                SkyboxTilePosition::Up => result_file.copy_from(&pic, width, 0),
-                SkyboxTilePosition::Down => result_file.copy_from(&pic, width, height*2),
-                SkyboxTilePosition::Front => result_file.copy_from(&pic, width, height),
-                SkyboxTilePosition::Back => result_file.copy_from(&pic, width*3, height)
+                SkyboxTilePosition::Left => file.copy_from(&pic, 0, height),
+                SkyboxTilePosition::Right => file.copy_from(&pic, width*2, height),
+                SkyboxTilePosition::Up => file.copy_from(&pic, width, 0),
+                SkyboxTilePosition::Down => file.copy_from(&pic, width, height*2),
+                SkyboxTilePosition::Front => file.copy_from(&pic, width, height),
+                SkyboxTilePosition::Back => file.copy_from(&pic, width*3, height)
             };
         }
 
