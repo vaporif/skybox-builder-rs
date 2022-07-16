@@ -1,4 +1,4 @@
-use std::{fs, io::Error, path::PathBuf, env};
+use std::{env, fs, io::Error, path::PathBuf};
 
 use image::{GenericImage, GenericImageView, ImageBuffer};
 
@@ -20,13 +20,10 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
 
     println!("Processign dir {}", path.display());
 
-    let rd = fs::read_dir(path)?;
-
-    let paths: Vec<PathBuf> = rd
+    let paths: Vec<PathBuf> = fs::read_dir(path)?
         .filter_map(Result::ok)
         .map(|f| f.path())
-        .filter(|f| f.is_file())
-        .filter(|f| f.extension().unwrap_or_default() == "png")
+        .filter(|f| f.is_file() && f.extension().unwrap_or_default() == "png")
         .collect();
 
     print!("Found {} files", paths.len());
@@ -35,10 +32,10 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
 }
 
 fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxFiles> {
-    if paths.len() > SKYBOX_TILES_AMOUNT {
-        panic!("Directory should have only {} tile files for now as merging of single skybox is supported", SKYBOX_TILES_AMOUNT);
-    } else if paths.len() < SKYBOX_TILES_AMOUNT {
-        panic!("Ensure all skybox tiles are present");
+    match paths.len() {
+        s if s > SKYBOX_TILES_AMOUNT => panic!("Directory should have only {} tile files for now as merging of single skybox is supported", SKYBOX_TILES_AMOUNT),
+        s if s < SKYBOX_TILES_AMOUNT => panic!("Ensure all skybox tiles are present"),
+        _ => {}
     }
 
     let tiles: Vec<SkyboxTile> = paths
@@ -104,8 +101,11 @@ impl SkyBoxFiles {
             return;
         }
 
-        let first_file = image::open(&self.tiles[0].path).expect("file opened for merge");
+        let first_file = image::open(&self.tiles[0].path)
+            .expect("First tile should be opened to calculate dimensions");
         let (width, height) = first_file.dimensions();
+
+        drop(first_file);
 
         let mut result_file = ImageBuffer::new(width * 4, height * 3);
 
@@ -115,22 +115,22 @@ impl SkyBoxFiles {
             match tile.position {
                 SkyboxTilePosition::Left => result_file
                     .copy_from(&pic, 0, height)
-                    .expect("copy success"),
+                    .expect("skybox tile copy success"),
                 SkyboxTilePosition::Right => result_file
                     .copy_from(&pic, width * 2, height)
-                    .expect("copy success"),
-                SkyboxTilePosition::Up => {
-                    result_file.copy_from(&pic, width, 0).expect("copy success")
-                }
+                    .expect("skybox tile copy success"),
+                SkyboxTilePosition::Up => result_file
+                    .copy_from(&pic, width, 0)
+                    .expect("skybox tile copy success"),
                 SkyboxTilePosition::Down => result_file
                     .copy_from(&pic, width, height * 2)
-                    .expect("copy success"),
+                    .expect("skybox tile copy success"),
                 SkyboxTilePosition::Front => result_file
                     .copy_from(&pic, width, height)
-                    .expect("copy success"),
+                    .expect("skybox tile copy success"),
                 SkyboxTilePosition::Back => result_file
                     .copy_from(&pic, width * 3, height)
-                    .expect("copy success"),
+                    .expect("skybox tile copy success"),
             };
         }
 
