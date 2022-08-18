@@ -54,7 +54,7 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxTiles> {
             match path
                 .file_name()
                 .and_then(|f| f.to_str())
-                .and_then(|f| Some(f.to_owned()))
+                .map(|f| f.to_owned())
             {
                 Some(p) if p.ends_with(LEFT_PNG_FILE_NAME) => Some(SkyboxTile::new(
                     path,
