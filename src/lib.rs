@@ -156,7 +156,10 @@ impl SkyBoxTiles {
     fn merge(self) {
         for (prefix, tiles) in self.tiles {
             if tiles.len() != SKYBOX_TILES_AMOUNT {
-                eprintln!("Not all tiles are set for skybox {}. Skipping skybox", prefix);
+                eprintln!(
+                    "Not all tiles are set for skybox {}. Skipping skybox",
+                    prefix
+                );
                 continue;
             }
 
