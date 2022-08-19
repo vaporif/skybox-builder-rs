@@ -40,7 +40,7 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
         .filter(|f| f.is_file() && f.extension().unwrap_or_default() == "png")
         .collect();
 
-    print!("Found {} files", paths.len());
+    println!("Found {} files", paths.len());
 
     Ok(paths)
 }
