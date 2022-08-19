@@ -219,7 +219,10 @@ mod tests {
 
         let skyboxes = get_skyboxes(paths);
 
-        similar_asserts::assert_eq!( HashMap::from([("skybox_01a".to_owned(), expected_skybox_tiles)]), skyboxes);
+        similar_asserts::assert_eq!(
+            HashMap::from([("skybox_01a".to_owned(), expected_skybox_tiles)]),
+            skyboxes
+        );
     }
 
     #[test]
@@ -237,7 +240,13 @@ mod tests {
 
         let skyboxes = get_skyboxes(paths);
 
-        similar_asserts::assert_eq!(HashMap::from([(prefix_1, expected_skybox_tiles_1), (prefix_2, expected_skybox_tiles_2)]), skyboxes);
+        similar_asserts::assert_eq!(
+            HashMap::from([
+                (prefix_1, expected_skybox_tiles_1),
+                (prefix_2, expected_skybox_tiles_2)
+            ]),
+            skyboxes
+        );
     }
 
     fn generate_skybox_tiles(prefix: &str) -> Vec<SkyboxTile> {
