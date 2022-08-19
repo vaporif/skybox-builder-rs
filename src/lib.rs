@@ -18,11 +18,10 @@ const BACK_PNG_FILE_NAME: &str = "back.png";
 
 pub fn merge_all_files() -> Result<(), Error> {
     let file_paths = get_file_paths()?;
-    for skybox in get_skyboxes(file_paths) {
-        println!("Processing skybox tiles");
-        dbg!(&skybox);
-        skybox.merge();
-    }
+    let skyboxes = get_skyboxes(file_paths);
+    println!("Processing skybox tiles");
+    dbg!(&skyboxes);
+    merge(skyboxes);
 
     Ok(())
 }
@@ -43,7 +42,7 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
     Ok(paths)
 }
 
-fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxTiles> {
+fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
     if paths.len() < SKYBOX_TILES_AMOUNT {
         panic!("Ensure all skybox tiles are present");
     }
@@ -104,18 +103,69 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> Vec<SkyBoxTiles> {
             Entry::Occupied(mut o) => o.get_mut().push(ele),
             Entry::Vacant(v) => {
                 v.insert(vec![ele]);
-                ()
             }
         }
     }
 
-    vec![SkyBoxTiles { tiles }]
+    tiles
 }
 
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "testable", derive(Clone))]
-struct SkyBoxTiles {
-    tiles: HashMap<String, Vec<SkyboxTile>>,
+fn merge(tiles: HashMap<String, Vec<SkyboxTile>>) {
+    'outer: for (prefix, tiles) in tiles {
+        if tiles.len() != SKYBOX_TILES_AMOUNT {
+            eprintln!(
+                "Not all tiles are set for skybox {}. Skipping skybox",
+                prefix
+            );
+            continue;
+        }
+
+        let first_file = image::open(&tiles[0].path)
+            .expect("First tile should be opened to calculate dimensions");
+        let (width, height) = first_file.dimensions();
+
+        drop(first_file);
+
+        let mut result_file = ImageBuffer::new(width * 4, height * 3);
+
+        for tile in tiles.into_iter() {
+            let pic = image::open(tile.path).unwrap();
+            let (pic_width, pic_height) = pic.dimensions();
+
+            if pic_height != height || pic_width != width {
+                eprintln!(
+                    "Not all tiles on skybox {} have same dimensions. Skipping skybox",
+                    prefix
+                );
+                break 'outer;
+            }
+
+            match tile.position {
+                SkyboxTilePosition::Left => result_file
+                    .copy_from(&pic, 0, height)
+                    .expect("skybox tile copy success"),
+                SkyboxTilePosition::Right => result_file
+                    .copy_from(&pic, width * 2, height)
+                    .expect("skybox tile copy success"),
+                SkyboxTilePosition::Up => result_file
+                    .copy_from(&pic, width, 0)
+                    .expect("skybox tile copy success"),
+                SkyboxTilePosition::Down => result_file
+                    .copy_from(&pic, width, height * 2)
+                    .expect("skybox tile copy success"),
+                SkyboxTilePosition::Front => result_file
+                    .copy_from(&pic, width, height)
+                    .expect("skybox tile copy success"),
+                SkyboxTilePosition::Back => result_file
+                    .copy_from(&pic, width * 3, height)
+                    .expect("skybox tile copy success"),
+            };
+        }
+
+        result_file
+            .save_with_format(format!("{}_skybox.png", prefix), image::ImageFormat::Png)
+            .expect("File saved");
+    }
 }
 
 #[derive(PartialEq, Debug)]
@@ -152,146 +202,87 @@ enum SkyboxTilePosition {
     Back,
 }
 
-impl SkyBoxTiles {
-    fn merge(self) {
-        'outer: for (prefix, tiles) in self.tiles {
-            if tiles.len() != SKYBOX_TILES_AMOUNT {
-                eprintln!(
-                    "Not all tiles are set for skybox {}. Skipping skybox",
-                    prefix
-                );
-                continue;
-            }
+#[cfg(test)]
+mod tests {
+    use assertx::*;
+    use std::path::PathBuf;
 
-            let first_file = image::open(&tiles[0].path)
-                .expect("First tile should be opened to calculate dimensions");
-            let (width, height) = first_file.dimensions();
+    use super::*;
 
-            drop(first_file);
+    #[test]
+    fn get_skyboxes_single_file() {
+        let expected_skybox_tiles = generate_skybox_tiles("skybox_01a");
 
-            let mut result_file = ImageBuffer::new(width * 4, height * 3);
+        let paths = expected_skybox_tiles
+            .tiles
+            .iter()
+            .map(|f| f.path.clone())
+            .collect();
 
-            for tile in tiles.into_iter() {
-                let pic = image::open(tile.path).unwrap();
-                let (pic_width, pic_height) = pic.dimensions();
+        let skyboxes = get_skyboxes(paths);
+        let tiles = HashMap::from(("skybox_01a", [expected_skybox_tiles]));
+        let expected = SkyBoxTiles { tiles };
 
-                if pic_height != height || pic_width != width {
-                    eprintln!(
-                        "Not all tiles on skybox {} have same dimensions. Skipping skybox",
-                        prefix
-                    );
-                    break 'outer;
-                }
+        assert!(1 == skyboxes.len());
+        assert_contains_exactly!(skyboxes[0].tiles, tiles);
+    }
 
-                match tile.position {
-                    SkyboxTilePosition::Left => result_file
-                        .copy_from(&pic, 0, height)
-                        .expect("skybox tile copy success"),
-                    SkyboxTilePosition::Right => result_file
-                        .copy_from(&pic, width * 2, height)
-                        .expect("skybox tile copy success"),
-                    SkyboxTilePosition::Up => result_file
-                        .copy_from(&pic, width, 0)
-                        .expect("skybox tile copy success"),
-                    SkyboxTilePosition::Down => result_file
-                        .copy_from(&pic, width, height * 2)
-                        .expect("skybox tile copy success"),
-                    SkyboxTilePosition::Front => result_file
-                        .copy_from(&pic, width, height)
-                        .expect("skybox tile copy success"),
-                    SkyboxTilePosition::Back => result_file
-                        .copy_from(&pic, width * 3, height)
-                        .expect("skybox tile copy success"),
-                };
-            }
+    #[test]
+    #[ignore]
+    fn get_skyboxes_multiple_files() {
+        let prefix_1 = String::from("skybox_01a");
+        let prefix_2 = String::from("skybox_02a");
+        let expected_skybox_tiles_1 = generate_skybox_tiles(&prefix_1);
+        let expected_skybox_tiles_2 = generate_skybox_tiles(&prefix_2);
 
-            result_file
-                .save_with_format(format!("{}_skybox.png", prefix), image::ImageFormat::Png)
-                .expect("File saved");
-        }
+        let paths: Vec<PathBuf> = expected_skybox_tiles_1
+            .tiles
+            .iter()
+            .chain(expected_skybox_tiles_2.tiles.iter())
+            .filter(|f| f.path.starts_with(&prefix_1))
+            .map(|f| f.path.clone())
+            .collect();
+
+        let skyboxes = get_skyboxes(paths);
+
+        assert_contains_exactly!(
+            skyboxes,
+            vec![expected_skybox_tiles_1, expected_skybox_tiles_2]
+        );
+    }
+
+    fn generate_skybox_tiles(prefix: &str) -> Vec<SkyBoxTile> {
+        let left = SkyboxTile {
+            path: PathBuf::from(format!("{}_left.png", prefix)),
+            prefix: prefix.to_owned(),
+            position: SkyboxTilePosition::Left,
+        };
+        let rigth = SkyboxTile {
+            path: PathBuf::from(format!("{}_right.png", prefix)),
+            prefix: prefix.to_owned(),
+            position: SkyboxTilePosition::Right,
+        };
+        let up = SkyboxTile {
+            path: PathBuf::from(format!("{}_up.png", prefix)),
+            prefix: prefix.to_owned(),
+            position: SkyboxTilePosition::Up,
+        };
+        let down = SkyboxTile {
+            path: PathBuf::from(format!("{}_down.png", prefix)),
+            prefix: prefix.to_owned(),
+            position: SkyboxTilePosition::Down,
+        };
+        let front = SkyboxTile {
+            path: PathBuf::from(format!("{}_front.png", prefix)),
+            prefix: prefix.to_owned(),
+            position: SkyboxTilePosition::Front,
+        };
+        let back = SkyboxTile {
+            path: PathBuf::from(format!("{}_back.png", prefix)),
+            prefix: prefix.to_owned(),
+            position: SkyboxTilePosition::Back,
+        };
+
+        vec![left, rigth, up, down, front, back]
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use assertx::*;
-//     use std::path::PathBuf;
-
-//     use super::*;
-
-//     #[test]
-//     fn get_skyboxes_single_file() {
-//         let expected_skybox_tiles = generate_skybox_tiles("skybox_01a");
-
-//         let paths = expected_skybox_tiles
-//             .tiles
-//             .iter()
-//             .map(|f| f.path.clone())
-//             .collect();
-
-//         let skyboxes = get_skyboxes(paths);
-//         let tiles = HashMap::from(("skybox_01a", [expected_skybox_tiles]));
-//         let expected = vec![(SkyBoxTiles { tiles })];
-
-//         assert_contains_exactly!(skyboxes, vec![(expected)]);
-//     }
-
-//     #[test]
-//     #[ignore]
-//     fn get_skyboxes_multiple_files() {
-//         let prefix_1 = String::from("skybox_01a");
-//         let prefix_2 = String::from("skybox_02a");
-//         let expected_skybox_tiles_1 = generate_skybox_tiles(&prefix_1);
-//         let expected_skybox_tiles_2 = generate_skybox_tiles(&prefix_2);
-
-//         let paths: Vec<PathBuf> = expected_skybox_tiles_1
-//             .tiles
-//             .iter()
-//             .chain(expected_skybox_tiles_2.tiles.iter())
-//             .filter(|f| f.path.starts_with(&prefix_1))
-//             .map(|f| f.path.clone())
-//             .collect();
-
-//         let skyboxes = get_skyboxes(paths);
-
-//         assert_contains_exactly!(
-//             skyboxes,
-//             vec![expected_skybox_tiles_1, expected_skybox_tiles_2]
-//         );
-//     }
-
-//     fn generate_skybox_tiles(prefix: &str) -> Vec<SkyBoxTile> {
-//         let left = SkyboxTile {
-//             path: PathBuf::from(format!("{}_left.png", prefix)),
-//             prefix: prefix.to_owned(),
-//             position: SkyboxTilePosition::Left,
-//         };
-//         let rigth = SkyboxTile {
-//             path: PathBuf::from(format!("{}_right.png", prefix)),
-//             prefix: prefix.to_owned(),
-//             position: SkyboxTilePosition::Right,
-//         };
-//         let up = SkyboxTile {
-//             path: PathBuf::from(format!("{}_up.png", prefix)),
-//             prefix: prefix.to_owned(),
-//             position: SkyboxTilePosition::Up,
-//         };
-//         let down = SkyboxTile {
-//             path: PathBuf::from(format!("{}_down.png", prefix)),
-//             prefix: prefix.to_owned(),
-//             position: SkyboxTilePosition::Down,
-//         };
-//         let front = SkyboxTile {
-//             path: PathBuf::from(format!("{}_front.png", prefix)),
-//             prefix: prefix.to_owned(),
-//             position: SkyboxTilePosition::Front,
-//         };
-//         let back = SkyboxTile {
-//             path: PathBuf::from(format!("{}_back.png", prefix)),
-//             prefix: prefix.to_owned(),
-//             position: SkyboxTilePosition::Back,
-//         };
-
-//         vec![left, rigth, up, down, front, back]
-//     }
-// }
