@@ -3,7 +3,10 @@ use std::{
     env, fs,
     io::Error,
     path::PathBuf,
+    sync::{Arc, Mutex},
 };
+
+use rayon::prelude::*;
 
 use image::{GenericImage, GenericImageView, ImageBuffer};
 
@@ -110,62 +113,80 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
     tiles
 }
 
-fn merge(tiles: HashMap<String, Vec<SkyboxTile>>) {
-    'outer: for (prefix, tiles) in tiles {
+fn merge(mut tiles: HashMap<String, Vec<SkyboxTile>>) {
+    tiles.par_drain().for_each(|r| {
+        let (prefix, mut tiles) = r;
         if tiles.len() != SKYBOX_TILES_AMOUNT {
             eprintln!(
                 "Not all tiles are set for skybox {}. Skipping skybox",
                 prefix
             );
-            continue;
+            return;
         }
 
         let first_file = image::open(&tiles[0].path)
             .expect("First tile should be opened to calculate dimensions");
+
         let (width, height) = first_file.dimensions();
 
         drop(first_file);
 
-        let mut result_file = ImageBuffer::new(width * 4, height * 3);
+        let result_file = ImageBuffer::new(width * 4, height * 3);
+        let reserve_file_mut = Arc::new(Mutex::new(result_file));
 
-        for tile in tiles.into_iter() {
+        tiles.par_drain(..).for_each(|tile| {
             let pic = image::open(tile.path).unwrap();
             let (pic_width, pic_height) = pic.dimensions();
 
             if pic_height != height || pic_width != width {
                 eprintln!(
                     "Not all tiles on skybox {} have same dimensions. Skipping skybox",
-                    prefix
+                    &prefix
                 );
-                break 'outer;
+
+                return;
             }
 
             match tile.position {
-                SkyboxTilePosition::Left => result_file
+                SkyboxTilePosition::Left => reserve_file_mut
+                    .lock()
+                    .unwrap()
                     .copy_from(&pic, 0, height)
                     .expect("skybox tile copy success"),
-                SkyboxTilePosition::Right => result_file
+                SkyboxTilePosition::Right => reserve_file_mut
+                    .lock()
+                    .unwrap()
                     .copy_from(&pic, width * 2, height)
                     .expect("skybox tile copy success"),
-                SkyboxTilePosition::Up => result_file
+                SkyboxTilePosition::Up => reserve_file_mut
+                    .lock()
+                    .unwrap()
                     .copy_from(&pic, width, 0)
                     .expect("skybox tile copy success"),
-                SkyboxTilePosition::Down => result_file
+                SkyboxTilePosition::Down => reserve_file_mut
+                    .lock()
+                    .unwrap()
                     .copy_from(&pic, width, height * 2)
                     .expect("skybox tile copy success"),
-                SkyboxTilePosition::Front => result_file
+                SkyboxTilePosition::Front => reserve_file_mut
+                    .lock()
+                    .unwrap()
                     .copy_from(&pic, width, height)
                     .expect("skybox tile copy success"),
-                SkyboxTilePosition::Back => result_file
+                SkyboxTilePosition::Back => reserve_file_mut
+                    .lock()
+                    .unwrap()
                     .copy_from(&pic, width * 3, height)
                     .expect("skybox tile copy success"),
             };
-        }
+        });
 
-        result_file
-            .save_with_format(format!("{}_skybox.png", prefix), image::ImageFormat::Png)
+        reserve_file_mut
+            .lock()
+            .unwrap()
+            .save_with_format(format!("{}_skybox.png", &prefix), image::ImageFormat::Png)
             .expect("File saved");
-    }
+    });
 }
 
 #[derive(PartialEq, Debug)]
