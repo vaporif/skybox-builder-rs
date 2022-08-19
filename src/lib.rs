@@ -95,7 +95,7 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
                     SkyboxTilePosition::Back,
                     BACK_PNG_FILE_NAME,
                 )),
-                Some(_) | None => None,
+                _ => None,
             }
         })
         .collect();
