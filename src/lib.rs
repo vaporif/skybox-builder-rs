@@ -47,7 +47,8 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
 
 fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
     if paths.len() < SKYBOX_TILES_AMOUNT {
-        panic!("Ensure all skybox tiles are present");
+        eprintln!("Ensure all skybox tiles are present");
+        panic!();
     }
 
     let tiles_ungrouped: Vec<SkyboxTile> = paths
