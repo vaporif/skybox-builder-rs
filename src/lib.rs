@@ -154,7 +154,7 @@ enum SkyboxTilePosition {
 
 impl SkyBoxTiles {
     fn merge(self) {
-        for (prefix, tiles) in self.tiles {
+        'outer: for (prefix, tiles) in self.tiles {
             if tiles.len() != SKYBOX_TILES_AMOUNT {
                 eprintln!(
                     "Not all tiles are set for skybox {}. Skipping skybox",
@@ -173,6 +173,15 @@ impl SkyBoxTiles {
 
             for tile in tiles.into_iter() {
                 let pic = image::open(tile.path).unwrap();
+                let (pic_width, pic_height) = pic.dimensions();
+
+                if pic_height != height || pic_width != width {
+                    eprintln!(
+                        "Not all tiles on skybox {} have same dimensions. Skipping skybox",
+                        prefix
+                    );
+                    break 'outer;
+                }
 
                 match tile.position {
                     SkyboxTilePosition::Left => result_file
@@ -221,8 +230,10 @@ impl SkyBoxTiles {
 //             .collect();
 
 //         let skyboxes = get_skyboxes(paths);
+//         let tiles = HashMap::from(("skybox_01a", [expected_skybox_tiles]));
+//         let expected = vec![(SkyBoxTiles { tiles })];
 
-//         assert_contains_exactly!(skyboxes, vec![expected_skybox_tiles]);
+//         assert_contains_exactly!(skyboxes, vec![(expected)]);
 //     }
 
 //     #[test]
@@ -249,7 +260,7 @@ impl SkyBoxTiles {
 //         );
 //     }
 
-//     fn generate_skybox_tiles(prefix: &str) -> SkyBoxTiles {
+//     fn generate_skybox_tiles(prefix: &str) -> Vec<SkyBoxTile> {
 //         let left = SkyboxTile {
 //             path: PathBuf::from(format!("{}_left.png", prefix)),
 //             prefix: prefix.to_owned(),
@@ -281,8 +292,6 @@ impl SkyBoxTiles {
 //             position: SkyboxTilePosition::Back,
 //         };
 
-//         SkyBoxTiles {
-//             tiles: HashMap::from((prefix.to_owned(), vec![left, rigth, up, down, front, back])),
-//         }
+//         vec![left, rigth, up, down, front, back]
 //     }
 // }
