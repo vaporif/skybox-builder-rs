@@ -249,10 +249,8 @@ mod tests {
 
     #[test]
     fn get_skyboxes_multiple_files() {
-        let prefix_1 = String::from("skybox_01a");
-        let prefix_2 = String::from("skybox_02a");
-        let expected_skybox_tiles_1 = generate_skybox_tiles(&prefix_1);
-        let expected_skybox_tiles_2 = generate_skybox_tiles(&prefix_2);
+        let expected_skybox_tiles_1 = generate_skybox_tiles("skybox_01a");
+        let expected_skybox_tiles_2 = generate_skybox_tiles("skybox_02a");
 
         let paths: Vec<PathBuf> = expected_skybox_tiles_1
             .iter()
@@ -264,8 +262,8 @@ mod tests {
 
         similar_asserts::assert_eq!(
             HashMap::from([
-                (prefix_1, expected_skybox_tiles_1),
-                (prefix_2, expected_skybox_tiles_2)
+                ("skybox_01a".to_owned(), expected_skybox_tiles_1),
+                ("skybox_02a".to_owned(), expected_skybox_tiles_2)
             ]),
             skyboxes
         );
