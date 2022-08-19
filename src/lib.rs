@@ -184,7 +184,7 @@ fn merge(mut tiles: HashMap<String, Vec<SkyboxTile>>) {
         reserve_file_mut
             .lock()
             .unwrap()
-            .save_with_format(format!("{}_skybox.png", &prefix), image::ImageFormat::Png)
+            .save_with_format(format!("{}skybox.png", &prefix), image::ImageFormat::Png)
             .expect("File saved");
     });
 }
