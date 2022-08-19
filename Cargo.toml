@@ -12,4 +12,4 @@ testable=[]
 image = { version = "0.24.2", default-features = false, features = ["png"] }
 
 [dev-dependencies]
-assertx = "1.1.7"
+similar-asserts = "1.4.2"
