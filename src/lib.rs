@@ -126,7 +126,7 @@ fn merge(mut tiles: HashMap<String, Vec<SkyboxTile>>) {
         }
 
         let first_file = image::open(&tiles[0].path)
-            .expect("First tile should be opened to calculate dimensions");
+            .expect("failed to open first image to calculate dimensions");
 
         let (width, height) = first_file.dimensions();
 
@@ -151,34 +151,34 @@ fn merge(mut tiles: HashMap<String, Vec<SkyboxTile>>) {
             match tile.position {
                 SkyboxTilePosition::Left => reserve_file_mut
                     .lock()
-                    .unwrap()
+                    .expect("result file lock has failed")
                     .copy_from(&pic, 0, height)
-                    .expect("skybox tile copy success"),
+                    .expect("failed to copy tile to result image"),
                 SkyboxTilePosition::Right => reserve_file_mut
                     .lock()
-                    .unwrap()
+                    .expect("result file lock has failed")
                     .copy_from(&pic, width * 2, height)
-                    .expect("skybox tile copy success"),
+                    .expect("failed to copy tile to result image"),
                 SkyboxTilePosition::Up => reserve_file_mut
                     .lock()
-                    .unwrap()
+                    .expect("result file lock has failed")
                     .copy_from(&pic, width, 0)
-                    .expect("skybox tile copy success"),
+                    .expect("failed to copy tile to result image"),
                 SkyboxTilePosition::Down => reserve_file_mut
                     .lock()
-                    .unwrap()
+                    .expect("result file lock has failed")
                     .copy_from(&pic, width, height * 2)
-                    .expect("skybox tile copy success"),
+                    .expect("failed to copy tile to result image"),
                 SkyboxTilePosition::Front => reserve_file_mut
                     .lock()
-                    .unwrap()
+                    .expect("result file lock has failed")
                     .copy_from(&pic, width, height)
-                    .expect("skybox tile copy success"),
+                    .expect("failed to copy tile to result image"),
                 SkyboxTilePosition::Back => reserve_file_mut
                     .lock()
-                    .unwrap()
+                    .expect("result file lock has failed")
                     .copy_from(&pic, width * 3, height)
-                    .expect("skybox tile copy success"),
+                    .expect("failed to copy tile to result image"),
             };
         });
 
@@ -186,7 +186,7 @@ fn merge(mut tiles: HashMap<String, Vec<SkyboxTile>>) {
             .lock()
             .unwrap()
             .save_with_format(format!("{}skybox.png", &prefix), image::ImageFormat::Png)
-            .expect("File saved");
+            .expect("could not save result fyle");
     });
 }
 
