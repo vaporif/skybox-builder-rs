@@ -195,7 +195,7 @@ fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_fil
             .expect("could not save result fyle");
 
         if delete_input_files {
-            tiles.par_drain(..).for_each(|tile| tile.delete());
+            tiles.drain(..).for_each(|tile| tile.delete());
         }
     })
 }
