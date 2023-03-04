@@ -1,3 +1,4 @@
+use clap::{command, Arg};
 use std::{env, io::Error};
 
 use skybox_composer::merge_all_files;
@@ -9,11 +10,20 @@ fn main() {
 }
 
 fn run() -> Result<(), Error> {
-    let _args: Vec<String> = env::args().collect();
-    match env::args().count() {
-        1 => merge_all_files()?,
-        _ => panic!("Params not supported"),
-    }
+    let matches = command!()
+        .version("0.2.0")
+        .author("Dmytro O. <vaporif@gmail.com>")
+        .about("Skybox file merger")
+        .arg(
+            Arg::new("delete")
+                .short('d')
+                .action(clap::ArgAction::SetTrue)
+                .help("delete input images after the skybox is created"),
+        )
+        .get_matches();
+
+    let is_delete = matches.get_flag("delete");
+    merge_all_files(is_delete)?;
 
     Ok(())
 }

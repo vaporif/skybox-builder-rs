@@ -19,14 +19,26 @@ const DOWN_PNG_FILE_NAME: &str = "down.png";
 const FRONT_PNG_FILE_NAME: &str = "front.png";
 const BACK_PNG_FILE_NAME: &str = "back.png";
 
-pub fn merge_all_files() -> Result<(), Error> {
+pub fn merge_all_files(is_delete: bool) -> Result<(), Error> {
     let file_paths = get_file_paths()?;
     let skyboxes = get_skyboxes(file_paths);
     println!("Processing skybox tiles");
-    dbg!(&skyboxes);
-    merge(skyboxes);
+    merge(&skyboxes);
+
+    if is_delete {
+        remove_files(skyboxes);
+        println!("Input files removed");
+    }
 
     Ok(())
+}
+
+fn remove_files(skyboxes: HashMap<String, Vec<SkyboxTile>>) {
+    skyboxes
+        .values()
+        .flat_map(|s| s)
+        .filter_map(|f| fs::remove_file(&f.path).err())
+        .for_each(|error| eprint!("Error removing filer: {error}"));
 }
 
 fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
@@ -48,7 +60,7 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
 fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
     if paths.len() < SKYBOX_TILES_AMOUNT {
         eprintln!("Ensure all skybox tiles are present");
-        panic!();
+        std::process::exit(1);
     }
 
     let tiles_ungrouped: Vec<SkyboxTile> = paths
@@ -114,9 +126,9 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
     tiles
 }
 
-fn merge(mut tiles: HashMap<String, Vec<SkyboxTile>>) {
-    tiles.par_drain().for_each(|r| {
-        let (prefix, mut tiles) = r;
+fn merge(tiles: &HashMap<String, Vec<SkyboxTile>>) {
+    tiles.par_iter().for_each(|r| {
+        let (prefix, tiles) = r;
         if tiles.len() != SKYBOX_TILES_AMOUNT {
             eprintln!(
                 "Not all tiles are set for skybox {}. Skipping skybox",
@@ -135,8 +147,8 @@ fn merge(mut tiles: HashMap<String, Vec<SkyboxTile>>) {
         let result_file = ImageBuffer::new(width * 4, height * 3);
         let reserve_file_mut = Arc::new(Mutex::new(result_file));
 
-        tiles.par_drain(..).for_each(|tile| {
-            let pic = image::open(tile.path).unwrap();
+        tiles.par_iter().for_each(|tile| {
+            let pic = image::open(&tile.path).unwrap();
             let (pic_width, pic_height) = pic.dimensions();
 
             if pic_height != height || pic_width != width {

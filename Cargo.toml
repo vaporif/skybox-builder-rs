@@ -2,7 +2,7 @@
 name = "skybox_composer"
 description = "Skybox Composer cli tool"
 authors = ["Dmytro Onypko <vaporif@gmail.com>"]
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 repository = "https://github.com/d3-dmitriy-onypko/skybox-builder-rs"
 readme = "README.md"
@@ -14,6 +14,7 @@ license = "MIT"
 testable=[]
 
 [dependencies]
+clap = { version = "4.1.*", features = ["cargo"] }
 image = { version = "0.24.*", default-features = false, features = ["png"] }
 rayon = "1.5.*"
 
