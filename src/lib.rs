@@ -2,7 +2,7 @@ use std::{
     collections::{hash_map::Entry, HashMap},
     env, fs,
     io::Error,
-    path::{PathBuf, Path},
+    path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
 
@@ -37,15 +37,13 @@ fn remove_input_files(skyboxes: HashMap<String, Vec<SkyboxTile>>) {
         .values()
         .flatten()
         .filter_map(|f| fs::remove_file(&f.path).err().map(|e| (&f.path, e)))
-        .for_each(|(path, error)| eprintln!("Error removing file {}: {error}", get_file_name(path)));
+        .for_each(|(path, error)| {
+            eprintln!("Error removing file {}: {error}", get_file_name(path))
+        });
 }
 
 fn get_file_name(path: &Path) -> &str {
-    path
-        .file_name()
-        .unwrap()
-        .to_str()
-        .unwrap()
+    path.file_name().unwrap().to_str().unwrap()
 }
 
 fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
