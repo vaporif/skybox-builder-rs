@@ -22,7 +22,7 @@ const BACK_PNG_FILE_NAME: &str = "back.png";
 pub fn process_files(delete_input_files: bool) -> Result<(), Error> {
     let file_paths = get_file_paths()?;
     let skyboxes = get_skyboxes(file_paths);
-    println!("Processing skybox tiles");
+    println!("Generating skyboxes");
     merge_all_files(skyboxes, delete_input_files);
 
     Ok(())
@@ -39,14 +39,14 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
         .filter(|f| f.is_file() && f.extension().unwrap_or_default() == "png")
         .collect();
 
-    println!("Found {} files", paths.len());
+    println!("Found {} png files", paths.len());
 
     Ok(paths)
 }
 
 fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
     if paths.len() < SKYBOX_TILES_AMOUNT {
-        eprintln!("Ensure all skybox tiles are present");
+        eprintln!("Ensure all skybox tiles present");
         std::process::exit(1);
     }
 
@@ -109,6 +109,9 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
             }
         }
     }
+
+    let skybox_names_cs = tiles.keys().map(|f| SkyboxTile::result_file_name(&f)).collect::<Vec<String>>().join(",");
+    println!("Files could generate skyboxes: {}", skybox_names_cs);
 
     tiles
 }
@@ -181,7 +184,7 @@ fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_fil
         reserve_file_mut
             .lock()
             .unwrap()
-            .save_with_format(format!("{}skybox.png", &prefix), image::ImageFormat::Png)
+            .save_with_format(SkyboxTile::result_file_name(&prefix), image::ImageFormat::Png)
             .expect("could not save result fyle");
        
         if delete_input_files {
@@ -216,6 +219,10 @@ impl SkyboxTile {
         if let Err(error) = fs::remove_file(&self.path) {
             eprintln!("Error removing file {}: {error}", self.path.file_name().unwrap().to_str().unwrap())
         }
+    }
+
+    fn result_file_name(prefix: &str) -> String {
+        format!("{}skybox.png", &prefix)
     }
 }
 
