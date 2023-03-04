@@ -15,3 +15,5 @@ cargo buid --release
 
 [Rust]:<https://www.rust-lang.org/tools/install>
 
+## Compiled binaries
+Check Releases
