@@ -36,9 +36,9 @@ pub fn merge_all_files(delete_input_files: bool) -> Result<(), Error> {
 fn remove_input_files(skyboxes: HashMap<String, Vec<SkyboxTile>>) {
     skyboxes
         .values()
-        .flat_map(|s| s)
+        .flatten()
         .filter_map(|f| fs::remove_file(&f.path).err())
-        .for_each(|error| eprint!("Error removing filer: {error}"));
+        .for_each(|error| eprintln!("Error removing file: {error}"));
 }
 
 fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
@@ -130,11 +130,8 @@ fn merge(tiles: &HashMap<String, Vec<SkyboxTile>>) {
     tiles.par_iter().for_each(|r| {
         let (prefix, tiles) = r;
         if tiles.len() != SKYBOX_TILES_AMOUNT {
-            eprintln!(
-                "Not all tiles are set for skybox {}. Skipping skybox",
-                prefix
-            );
-            return;
+            eprintln!("Not all tiles are set for skybox {prefix}. Skipping skybox");
+            std::process::exit(1);
         }
 
         let first_file = image::open(&tiles[0].path)
