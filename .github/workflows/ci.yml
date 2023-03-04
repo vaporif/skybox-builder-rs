@@ -54,6 +54,7 @@ jobs:
 
   clippy:
     name: Clippy
+    if: ${{ github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -69,6 +70,7 @@ jobs:
 
   coverage:
     name: Code coverage
+    if: ${{ github.actor != 'dependabot[bot]' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
