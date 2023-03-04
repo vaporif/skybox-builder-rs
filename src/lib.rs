@@ -112,7 +112,7 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
 
     let skybox_names_cs = tiles
         .keys()
-        .map(|f| SkyboxTile::result_file_name(&f))
+        .map(|f| SkyboxTile::result_file_name(f))
         .collect::<Vec<String>>()
         .join(",");
     println!("Files could generate skyboxes: {skybox_names_cs}");
