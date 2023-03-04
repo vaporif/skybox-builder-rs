@@ -2,7 +2,7 @@ use std::{
     collections::{hash_map::Entry, HashMap},
     env, fs,
     io::Error,
-    path::{PathBuf},
+    path::PathBuf,
     sync::{Arc, Mutex},
 };
 
@@ -110,7 +110,11 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
         }
     }
 
-    let skybox_names_cs = tiles.keys().map(|f| SkyboxTile::result_file_name(&f)).collect::<Vec<String>>().join(",");
+    let skybox_names_cs = tiles
+        .keys()
+        .map(|f| SkyboxTile::result_file_name(&f))
+        .collect::<Vec<String>>()
+        .join(",");
     println!("Files could generate skyboxes: {}", skybox_names_cs);
 
     tiles
@@ -184,9 +188,12 @@ fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_fil
         reserve_file_mut
             .lock()
             .unwrap()
-            .save_with_format(SkyboxTile::result_file_name(&prefix), image::ImageFormat::Png)
+            .save_with_format(
+                SkyboxTile::result_file_name(&prefix),
+                image::ImageFormat::Png,
+            )
             .expect("could not save result fyle");
-       
+
         if delete_input_files {
             tiles.par_drain(..).for_each(|tile| tile.delete());
         }
@@ -217,7 +224,10 @@ impl SkyboxTile {
 
     fn delete(self) {
         if let Err(error) = fs::remove_file(&self.path) {
-            eprintln!("Error removing file {}: {error}", self.path.file_name().unwrap().to_str().unwrap())
+            eprintln!(
+                "Error removing file {}: {error}",
+                self.path.file_name().unwrap().to_str().unwrap()
+            )
         }
     }
 
