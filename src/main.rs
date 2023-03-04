@@ -1,7 +1,7 @@
 use clap::{command, Arg};
 use std::{env, io::Error};
 
-use skybox_composer::merge_all_files;
+use skybox_composer::process_files;
 
 fn main() {
     if let Err(e) = run() {
@@ -23,7 +23,7 @@ fn run() -> Result<(), Error> {
         .get_matches();
 
     let delete_input_files = matches.get_flag("delete");
-    merge_all_files(delete_input_files)?;
+    process_files(delete_input_files)?;
 
     Ok(())
 }

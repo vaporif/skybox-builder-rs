@@ -2,7 +2,7 @@ use std::{
     collections::{hash_map::Entry, HashMap},
     env, fs,
     io::Error,
-    path::{Path, PathBuf},
+    path::{PathBuf},
     sync::{Arc, Mutex},
 };
 
@@ -19,26 +19,13 @@ const DOWN_PNG_FILE_NAME: &str = "down.png";
 const FRONT_PNG_FILE_NAME: &str = "front.png";
 const BACK_PNG_FILE_NAME: &str = "back.png";
 
-pub fn merge_all_files(delete_input_files: bool) -> Result<(), Error> {
+pub fn process_files(delete_input_files: bool) -> Result<(), Error> {
     let file_paths = get_file_paths()?;
     let skyboxes = get_skyboxes(file_paths);
     println!("Processing skybox tiles");
-    merge(&skyboxes, delete_input_files);
+    merge_all_files(skyboxes, delete_input_files);
 
     Ok(())
-}
-fn remove_input_files(skyboxes: HashMap<String, Vec<SkyboxTile>>) {
-    skyboxes
-        .values()
-        .flatten()
-        .filter_map(|f| fs::remove_file(&f.path).err().map(|e| (&f.path, e)))
-        .for_each(|(path, error)| {
-            eprintln!("Error removing file {}: {error}", get_file_name(path))
-        });
-}
-
-fn get_file_name(path: &Path) -> &str {
-    path.file_name().unwrap().to_str().unwrap()
 }
 
 fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
@@ -126,9 +113,9 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
     tiles
 }
 
-fn merge(tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_files: bool) {
+fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_files: bool) {
     tiles.par_drain().for_each(|r| {
-        let (prefix, tiles) = r;
+        let (prefix, mut tiles) = r;
         if tiles.len() != SKYBOX_TILES_AMOUNT {
             eprintln!("Not all tiles are set for skybox {prefix}. Skipping skybox");
             return;
@@ -226,13 +213,9 @@ impl SkyboxTile {
     }
 
     fn delete(self) {
-        if let Err(error) = fs::remove_file(self.path) {
-            eprintln!("Error removing file {}: {error}", get_file_name(&self.path))
+        if let Err(error) = fs::remove_file(&self.path) {
+            eprintln!("Error removing file {}: {error}", self.path.file_name().unwrap().to_str().unwrap())
         }
-    }
-
-    fn get_file_name(path: &Path) -> &str {
-        path.file_name().unwrap().to_str().unwrap()
     }
 }
 
