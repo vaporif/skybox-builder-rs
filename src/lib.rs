@@ -19,21 +19,21 @@ const DOWN_PNG_FILE_NAME: &str = "down.png";
 const FRONT_PNG_FILE_NAME: &str = "front.png";
 const BACK_PNG_FILE_NAME: &str = "back.png";
 
-pub fn merge_all_files(is_delete: bool) -> Result<(), Error> {
+pub fn merge_all_files(delete_input_files: bool) -> Result<(), Error> {
     let file_paths = get_file_paths()?;
     let skyboxes = get_skyboxes(file_paths);
     println!("Processing skybox tiles");
     merge(&skyboxes);
 
-    if is_delete {
-        remove_files(skyboxes);
+    if delete_input_files {
+        remove_input_files(skyboxes);
         println!("Input files removed");
     }
 
     Ok(())
 }
 
-fn remove_files(skyboxes: HashMap<String, Vec<SkyboxTile>>) {
+fn remove_input_files(skyboxes: HashMap<String, Vec<SkyboxTile>>) {
     skyboxes
         .values()
         .flat_map(|s| s)

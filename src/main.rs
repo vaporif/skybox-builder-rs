@@ -22,8 +22,8 @@ fn run() -> Result<(), Error> {
         )
         .get_matches();
 
-    let is_delete = matches.get_flag("delete");
-    merge_all_files(is_delete)?;
+    let delete_input_files = matches.get_flag("delete");
+    merge_all_files(delete_input_files)?;
 
     Ok(())
 }
