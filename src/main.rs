@@ -10,19 +10,20 @@ fn main() {
 }
 
 fn run() -> Result<(), Error> {
+    let delete_flag = "delete";
     let matches = command!()
         .version("0.2.0")
         .author("Dmytro O. <vaporif@gmail.com>")
         .about("Skybox file merger")
         .arg(
-            Arg::new("delete")
+            Arg::new(delete_flag)
                 .short('d')
                 .action(clap::ArgAction::SetTrue)
                 .help("delete input images after the skybox is created"),
         )
         .get_matches();
 
-    let delete_input_files = matches.get_flag("delete");
+    let delete_input_files = matches.get_flag(delete_flag);
     process_files(delete_input_files)?;
 
     Ok(())
