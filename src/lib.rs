@@ -23,12 +23,7 @@ pub fn merge_all_files(delete_input_files: bool) -> Result<(), Error> {
     let file_paths = get_file_paths()?;
     let skyboxes = get_skyboxes(file_paths);
     println!("Processing skybox tiles");
-    merge(&skyboxes);
-
-    if delete_input_files {
-        remove_input_files(skyboxes);
-        println!("Input files removed");
-    }
+    merge(&skyboxes, delete_input_files);
 
     Ok(())
 }
@@ -131,12 +126,12 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
     tiles
 }
 
-fn merge(tiles: &HashMap<String, Vec<SkyboxTile>>) {
-    tiles.par_iter().for_each(|r| {
+fn merge(tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_files: bool) {
+    tiles.par_drain().for_each(|r| {
         let (prefix, tiles) = r;
         if tiles.len() != SKYBOX_TILES_AMOUNT {
             eprintln!("Not all tiles are set for skybox {prefix}. Skipping skybox");
-            std::process::exit(1);
+            return;
         }
 
         let first_file = image::open(&tiles[0].path)
@@ -201,7 +196,11 @@ fn merge(tiles: &HashMap<String, Vec<SkyboxTile>>) {
             .unwrap()
             .save_with_format(format!("{}skybox.png", &prefix), image::ImageFormat::Png)
             .expect("could not save result fyle");
-    });
+       
+        if delete_input_files {
+            tiles.par_drain(..).for_each(|tile| tile.delete());
+        }
+    })
 }
 
 #[derive(PartialEq, Debug)]
@@ -224,6 +223,16 @@ impl SkyboxTile {
             prefix: file_name.trim_end_matches(file_suffix_to_omit).to_owned(),
             position,
         }
+    }
+
+    fn delete(self) {
+        if let Err(error) = fs::remove_file(self.path) {
+            eprintln!("Error removing file {}: {error}", get_file_name(&self.path))
+        }
+    }
+
+    fn get_file_name(path: &Path) -> &str {
+        path.file_name().unwrap().to_str().unwrap()
     }
 }
 
