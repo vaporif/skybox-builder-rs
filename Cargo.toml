@@ -16,7 +16,7 @@ testable=[]
 [dependencies]
 clap = { version = "4.1.*", features = ["cargo"] }
 image = { version = "0.24.*", default-features = false, features = ["png"] }
-rayon = "1.5.*"
+rayon = "1.7.*"
 
 [dev-dependencies]
 similar-asserts = "1.4.*"
