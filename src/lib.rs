@@ -1,3 +1,3 @@
 mod errors;
-mod skybox_tile;
 pub mod generation;
+mod skybox_tile;
