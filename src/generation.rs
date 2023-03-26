@@ -92,6 +92,7 @@ fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) -> anyhow::R
             let pic = image::open(tile.path()).expect("file failed to open");
             let (pic_width, pic_height) = pic.dimensions();
 
+            // TODO: remove file
             if pic_height != height || pic_width != width {
                 eprintln!(
                     "Not all tiles on skybox {} have same dimensions. Skipping skybox",
