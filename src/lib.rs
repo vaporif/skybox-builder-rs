@@ -51,10 +51,10 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
         .filter_map(|path| SkyboxTile::from_file(path))
         .collect();
 
-    let mut tiles = HashMap::<String, Vec<SkyboxTile>>::new();
+    let mut tiles_grouped = HashMap::<String, Vec<SkyboxTile>>::new();
 
     for ele in tiles_ungrouped {
-        match tiles.entry(ele.prefix().to_string()) {
+        match tiles_grouped.entry(ele.prefix().to_string()) {
             Entry::Occupied(mut o) => o.get_mut().push(ele),
             Entry::Vacant(v) => {
                 v.insert(vec![ele]);
@@ -62,14 +62,14 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
         }
     }
 
-    let skybox_names_cs = tiles
+    let skybox_names_cs = tiles_grouped
         .keys()
         .map(|f| SkyboxTile::result_file_name(f))
         .collect::<Vec<String>>()
         .join(",");
     println!("Files could generate skyboxes: {skybox_names_cs}");
 
-    tiles
+    tiles_grouped
 }
 
 fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_files: bool) {
