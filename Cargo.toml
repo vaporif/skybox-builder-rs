@@ -2,7 +2,7 @@
 name = "skybox_composer"
 description = "Skybox Composer cli tool"
 authors = ["Dmytro Onypko <vaporif@gmail.com>"]
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 repository = "https://github.com/d3-dmitriy-onypko/skybox-builder-rs"
 readme = "README.md"
