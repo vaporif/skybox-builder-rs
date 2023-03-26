@@ -1,7 +1,6 @@
 use clap::{command, Arg};
+use skybox_composer::generation::process_files;
 use std::{env, io::Error};
-
-use skybox_composer::process_files;
 
 fn main() {
     if let Err(e) = run() {
