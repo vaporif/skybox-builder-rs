@@ -12,7 +12,7 @@ fn main() {
 fn run() -> Result<(), Error> {
     let delete_flag = "delete";
     let matches = command!()
-        .version("0.2.1")
+        .version(env!("CARGO_PKG_VERSION"))
         .author("Dmytro O. <vaporif@gmail.com>")
         .about("Skybox file merger")
         .arg(
