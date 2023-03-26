@@ -5,12 +5,12 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use anyhow::{Context, Ok, bail};
+use anyhow::{bail, Context, Ok};
 use rayon::prelude::*;
 
 use image::{GenericImage, GenericImageView, ImageBuffer};
 
-use crate::{skybox_tile::{SkyboxTile, SkyboxTilePosition, TILES_FOR_MERGE}};
+use crate::skybox_tile::{SkyboxTile, SkyboxTilePosition, TILES_FOR_MERGE};
 
 type TilesGroup = HashMap<String, Vec<SkyboxTile>>;
 
@@ -147,7 +147,7 @@ fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) -> anyhow::R
 
         if delete_input_files {
             tiles.drain(..).for_each(|tile| tile.delete());
-        } 
+        }
     });
 
     Ok(())

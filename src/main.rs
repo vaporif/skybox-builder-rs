@@ -1,6 +1,6 @@
 use clap::{command, Arg};
 use skybox_composer::generation::process_files;
-use std::{env};
+use std::env;
 
 fn main() -> anyhow::Result<()> {
     let delete_flag = "delete";
