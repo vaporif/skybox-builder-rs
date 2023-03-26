@@ -1,7 +1,6 @@
 use std::{
     collections::{hash_map::Entry, HashMap},
     env, fs,
-    io::Error,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
@@ -14,7 +13,7 @@ use crate::skybox_tile::{SkyboxTile, SkyboxTilePosition, TILES_FOR_MERGE};
 
 type TilesGroup = HashMap<String, Vec<SkyboxTile>>;
 
-pub fn process_files(delete_input_files: bool) -> Result<(), Error> {
+pub fn process_files(delete_input_files: bool) -> Result<(), std::io::Error> {
     let file_paths = get_file_paths()?;
     let skyboxes = get_skyboxes(file_paths);
     println!("Generating skyboxes");
@@ -23,7 +22,7 @@ pub fn process_files(delete_input_files: bool) -> Result<(), Error> {
     Ok(())
 }
 
-fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
+fn get_file_paths() -> Result<Vec<PathBuf>, std::io::Error> {
     let path = env::current_dir().expect("Should be able to read current directory");
 
     println!("Processing dir {}", path.display());
@@ -63,7 +62,6 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> TilesGroup {
         .join(",");
     println!("Files could generate skyboxes: {skybox_names_cs}");
 
-    // Ok(tiles_grouped)
     tiles_grouped
 }
 

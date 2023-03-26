@@ -1,6 +1,7 @@
 use std::{
+    ffi::OsStr,
     fs,
-    path::{Path, PathBuf}, ffi::OsStr,
+    path::{Path, PathBuf},
 };
 
 pub static TILES_FOR_MERGE: &[&str] = &[
@@ -94,9 +95,7 @@ impl SkyboxTile {
     }
 
     fn get_extension_from_filename(file_name: &str) -> Option<&str> {
-        Path::new(file_name)
-            .extension()
-            .and_then(OsStr::to_str)
+        Path::new(file_name).extension().and_then(OsStr::to_str)
     }
 
     pub fn result_file_name(prefix: &str) -> String {
