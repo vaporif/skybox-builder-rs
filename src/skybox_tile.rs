@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub static TILES_FOR_MERGE: &'static [&str] = &[
+pub static TILES_FOR_MERGE: &[&str] = &[
     LEFT_PNG_FILE_NAME,
     RIGHT_PNG_FILE_NAME,
     UP_PNG_FILE_NAME,

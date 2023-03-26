@@ -70,7 +70,7 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> TilesGroup {
                     .filter(|required_tile| !present_tiles.contains(required_tile))
                     .collect();
 
-                eprintln!("Missing tiles: {:?}", missing_tiles);
+                eprintln!("Missing tiles: {missing_tiles:?}");
 
                 return false;
             }
@@ -98,7 +98,7 @@ fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) {
     tiles.par_drain().for_each(|r| {
         let (prefix, mut tiles) = r;
 
-        let first_file = image::open(&tiles[0].path())
+        let first_file = image::open(tiles[0].path())
             .expect("failed to open first image to calculate dimensions");
 
         let (width, height) = first_file.dimensions();
@@ -110,7 +110,7 @@ fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) {
 
         tiles.par_iter().for_each(|tile| {
             // TODO: process failure
-            let pic = image::open(&tile.path()).unwrap();
+            let pic = image::open(tile.path()).unwrap();
             let (pic_width, pic_height) = pic.dimensions();
 
             if pic_height != height || pic_width != width {
