@@ -1,4 +1,16 @@
-use std::{path::{PathBuf, Path}, fs};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
+
+pub static TILES_FOR_MERGE: &'static [&str] = &[
+    LEFT_PNG_FILE_NAME,
+    RIGHT_PNG_FILE_NAME,
+    UP_PNG_FILE_NAME,
+    DOWN_PNG_FILE_NAME,
+    FRONT_PNG_FILE_NAME,
+    BACK_PNG_FILE_NAME,
+];
 
 const LEFT_PNG_FILE_NAME: &str = "left.png";
 const RIGHT_PNG_FILE_NAME: &str = "right.png";
@@ -16,16 +28,14 @@ pub struct SkyboxTile {
 }
 
 impl SkyboxTile {
-    pub fn from_file(
-        path: PathBuf
-    ) -> Option<Self> {
+    pub fn from_file(path: PathBuf) -> Option<Self> {
         let file_name = path.file_name().and_then(|f| f.to_str())?;
         let (position, prefix) = Self::get_position_and_prefix(file_name)?;
 
         Some(SkyboxTile {
             path,
             prefix,
-            position
+            position,
         })
     }
 
@@ -52,13 +62,31 @@ impl SkyboxTile {
 
     fn get_position_and_prefix(file_name: &str) -> Option<(SkyboxTilePosition, String)> {
         match file_name {
-            s if s.ends_with(LEFT_PNG_FILE_NAME) => Some((SkyboxTilePosition::Left, file_name.trim_end_matches(LEFT_PNG_FILE_NAME).to_owned())),
-            s if s.ends_with(RIGHT_PNG_FILE_NAME) => Some((SkyboxTilePosition::Right, file_name.trim_end_matches(RIGHT_PNG_FILE_NAME).to_owned())),
-            s if s.ends_with(UP_PNG_FILE_NAME) => Some((SkyboxTilePosition::Up, file_name.trim_end_matches(UP_PNG_FILE_NAME).to_owned())),
-            s if s.ends_with(DOWN_PNG_FILE_NAME) => Some((SkyboxTilePosition::Down, file_name.trim_end_matches(DOWN_PNG_FILE_NAME).to_owned())),
-            s if s.ends_with(FRONT_PNG_FILE_NAME) => Some((SkyboxTilePosition::Front, file_name.trim_end_matches(FRONT_PNG_FILE_NAME).to_owned())),
-            s if s.ends_with(BACK_PNG_FILE_NAME) => Some((SkyboxTilePosition::Back, file_name.trim_end_matches(BACK_PNG_FILE_NAME).to_owned())),
-            _ => None
+            s if s.ends_with(LEFT_PNG_FILE_NAME) => Some((
+                SkyboxTilePosition::Left,
+                file_name.trim_end_matches(LEFT_PNG_FILE_NAME).to_owned(),
+            )),
+            s if s.ends_with(RIGHT_PNG_FILE_NAME) => Some((
+                SkyboxTilePosition::Right,
+                file_name.trim_end_matches(RIGHT_PNG_FILE_NAME).to_owned(),
+            )),
+            s if s.ends_with(UP_PNG_FILE_NAME) => Some((
+                SkyboxTilePosition::Up,
+                file_name.trim_end_matches(UP_PNG_FILE_NAME).to_owned(),
+            )),
+            s if s.ends_with(DOWN_PNG_FILE_NAME) => Some((
+                SkyboxTilePosition::Down,
+                file_name.trim_end_matches(DOWN_PNG_FILE_NAME).to_owned(),
+            )),
+            s if s.ends_with(FRONT_PNG_FILE_NAME) => Some((
+                SkyboxTilePosition::Front,
+                file_name.trim_end_matches(FRONT_PNG_FILE_NAME).to_owned(),
+            )),
+            s if s.ends_with(BACK_PNG_FILE_NAME) => Some((
+                SkyboxTilePosition::Back,
+                file_name.trim_end_matches(BACK_PNG_FILE_NAME).to_owned(),
+            )),
+            _ => None,
         }
     }
 

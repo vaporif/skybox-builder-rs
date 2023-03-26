@@ -11,9 +11,9 @@ use rayon::prelude::*;
 use image::{GenericImage, GenericImageView, ImageBuffer};
 
 mod skybox_tile;
-use skybox_tile::{SkyboxTile, SkyboxTilePosition};
+use skybox_tile::{SkyboxTile, SkyboxTilePosition, TILES_FOR_MERGE};
 
-const SKYBOX_TILES_AMOUNT: usize = 6;
+type TilesGroup = HashMap<String, Vec<SkyboxTile>>;
 
 pub fn process_files(delete_input_files: bool) -> Result<(), Error> {
     let file_paths = get_file_paths()?;
@@ -41,17 +41,12 @@ fn get_file_paths() -> Result<Vec<PathBuf>, Error> {
 }
 
 fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
-    if paths.len() < SKYBOX_TILES_AMOUNT {
-        eprintln!("Ensure all skybox tiles present");
-        std::process::exit(1);
-    }
-
     let tiles_ungrouped: Vec<SkyboxTile> = paths
         .into_iter()
         .filter_map(SkyboxTile::from_file)
         .collect();
 
-    let mut tiles_grouped = HashMap::<String, Vec<SkyboxTile>>::new();
+    let mut tiles_grouped = TilesGroup::new();
 
     for ele in tiles_ungrouped {
         match tiles_grouped.entry(ele.prefix().to_string()) {
@@ -61,6 +56,29 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
             }
         }
     }
+
+    let tiles_grouped: TilesGroup = tiles_grouped
+        .into_iter()
+        .filter(|(_, tiles)| {
+            if tiles.len() < TILES_FOR_MERGE.len() {
+                let present_tiles: Vec<&str> = tiles
+                    .iter()
+                    .filter_map(|tile| tile.path().file_name().and_then(|f| f.to_str()))
+                    .collect();
+
+                let missing_tiles: Vec<_> = TILES_FOR_MERGE
+                    .iter()
+                    .filter(|required_tile| !present_tiles.contains(required_tile))
+                    .collect();
+
+                eprintln!("Missing tiles: {:?}", missing_tiles);
+
+                return false;
+            }
+
+            true
+        })
+        .collect();
 
     let skybox_names_cs = tiles_grouped
         .keys()
@@ -75,7 +93,7 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
 fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_files: bool) {
     tiles.par_drain().for_each(|r| {
         let (prefix, mut tiles) = r;
-        if tiles.len() != SKYBOX_TILES_AMOUNT {
+        if tiles.len() != TILES_FOR_MERGE.len() {
             eprintln!("Not all tiles are set for skybox {prefix}. Skipping skybox");
             return;
         }
@@ -198,7 +216,7 @@ mod tests {
     }
 
     fn generate_skybox_tiles(prefix: &str) -> Vec<SkyboxTile> {
-        vec!["left", "rigth", "up", "down", "front", "back"]
+        vec!["left", "right", "up", "down", "front", "back"]
             .into_iter()
             .filter_map(|f| SkyboxTile::from_file(PathBuf::from(format!("{prefix}{f}.png"))))
             .collect()
