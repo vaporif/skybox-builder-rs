@@ -48,7 +48,7 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
 
     let tiles_ungrouped: Vec<SkyboxTile> = paths
         .into_iter()
-        .filter_map(|path| SkyboxTile::from_file(path))
+        .filter_map(SkyboxTile::from_file)
         .collect();
 
     let mut tiles_grouped = HashMap::<String, Vec<SkyboxTile>>::new();
