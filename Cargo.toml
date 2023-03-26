@@ -21,3 +21,4 @@ rayon = "1.7.*"
 
 [dev-dependencies]
 similar-asserts = "1.4.*"
+rusty-hook = "0.11.*"

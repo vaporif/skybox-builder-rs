@@ -168,7 +168,7 @@ mod tests {
             .map(|f| f.path().to_owned())
             .collect();
 
-        let skyboxes = get_skyboxes(paths);
+        let skyboxes = get_skyboxes(paths).expect("skybox generates");
 
         similar_asserts::assert_eq!(
             HashMap::from([("skybox_01a".to_owned(), expected_skybox_tiles)]),
@@ -187,7 +187,7 @@ mod tests {
             .map(|f| f.path().to_owned())
             .collect();
 
-        let skyboxes = get_skyboxes(paths);
+        let skyboxes = get_skyboxes(paths).expect("skybox generates");
 
         similar_asserts::assert_eq!(
             HashMap::from([
