@@ -1,23 +1,23 @@
 use std::{
     fs,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, ffi::OsStr,
 };
 
 pub static TILES_FOR_MERGE: &[&str] = &[
-    LEFT_PNG_FILE_NAME,
-    RIGHT_PNG_FILE_NAME,
-    UP_PNG_FILE_NAME,
-    DOWN_PNG_FILE_NAME,
-    FRONT_PNG_FILE_NAME,
-    BACK_PNG_FILE_NAME,
+    LEFT_FILENAME_SUFFIX,
+    RIGHT_FILENAME_SUFFIX,
+    UP_FILENAME_SUFFIX,
+    DOWN_FILENAME_SUFFIX,
+    FRONT_FILENAME_SUFFIX,
+    BACK_FILENAME_SUFFIX,
 ];
 
-const LEFT_PNG_FILE_NAME: &str = "left.png";
-const RIGHT_PNG_FILE_NAME: &str = "right.png";
-const UP_PNG_FILE_NAME: &str = "up.png";
-const DOWN_PNG_FILE_NAME: &str = "down.png";
-const FRONT_PNG_FILE_NAME: &str = "front.png";
-const BACK_PNG_FILE_NAME: &str = "back.png";
+const LEFT_FILENAME_SUFFIX: &str = "left";
+const RIGHT_FILENAME_SUFFIX: &str = "right";
+const UP_FILENAME_SUFFIX: &str = "up";
+const DOWN_FILENAME_SUFFIX: &str = "down";
+const FRONT_FILENAME_SUFFIX: &str = "front";
+const BACK_FILENAME_SUFFIX: &str = "back";
 
 #[derive(PartialEq, Debug)]
 #[cfg_attr(feature = "testable", derive(Clone))]
@@ -62,33 +62,40 @@ impl SkyboxTile {
     }
 
     fn get_position_and_prefix(file_name: &str) -> Option<(SkyboxTilePosition, &str)> {
+        let extension = Self::get_extension_from_filename(file_name)?;
         match file_name {
-            s if s.ends_with(LEFT_PNG_FILE_NAME) => Some((
+            s if s.ends_with(&format!("{LEFT_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Left,
-                file_name.trim_end_matches(LEFT_PNG_FILE_NAME),
+                file_name.trim_end_matches(LEFT_FILENAME_SUFFIX),
             )),
-            s if s.ends_with(RIGHT_PNG_FILE_NAME) => Some((
+            s if s.ends_with(&format!("{RIGHT_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Right,
-                file_name.trim_end_matches(RIGHT_PNG_FILE_NAME),
+                file_name.trim_end_matches(RIGHT_FILENAME_SUFFIX),
             )),
-            s if s.ends_with(UP_PNG_FILE_NAME) => Some((
+            s if s.ends_with(&format!("{UP_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Up,
-                file_name.trim_end_matches(UP_PNG_FILE_NAME),
+                file_name.trim_end_matches(UP_FILENAME_SUFFIX),
             )),
-            s if s.ends_with(DOWN_PNG_FILE_NAME) => Some((
+            s if s.ends_with(&format!("{DOWN_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Down,
-                file_name.trim_end_matches(DOWN_PNG_FILE_NAME),
+                file_name.trim_end_matches(DOWN_FILENAME_SUFFIX),
             )),
-            s if s.ends_with(FRONT_PNG_FILE_NAME) => Some((
+            s if s.ends_with(&format!("{FRONT_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Front,
-                file_name.trim_end_matches(FRONT_PNG_FILE_NAME),
+                file_name.trim_end_matches(FRONT_FILENAME_SUFFIX),
             )),
-            s if s.ends_with(BACK_PNG_FILE_NAME) => Some((
+            s if s.ends_with(&format!("{BACK_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Back,
-                file_name.trim_end_matches(BACK_PNG_FILE_NAME),
+                file_name.trim_end_matches(BACK_FILENAME_SUFFIX),
             )),
             _ => None,
         }
+    }
+
+    fn get_extension_from_filename(filename: &str) -> Option<&str> {
+        Path::new(filename)
+            .extension()
+            .and_then(OsStr::to_str)
     }
 
     pub fn result_file_name(prefix: &str) -> String {
