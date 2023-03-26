@@ -61,39 +61,40 @@ impl SkyboxTile {
         }
     }
 
+    // TODO: write regex for matching, no need to extract extension
     fn get_position_and_prefix(file_name: &str) -> Option<(SkyboxTilePosition, &str)> {
         let extension = Self::get_extension_from_filename(file_name)?;
         match file_name {
             s if s.ends_with(&format!("{LEFT_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Left,
-                file_name.trim_end_matches(LEFT_FILENAME_SUFFIX),
+                file_name.trim_end_matches(&format!("{LEFT_FILENAME_SUFFIX}.{extension}")),
             )),
             s if s.ends_with(&format!("{RIGHT_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Right,
-                file_name.trim_end_matches(RIGHT_FILENAME_SUFFIX),
+                file_name.trim_end_matches(&format!("{RIGHT_FILENAME_SUFFIX}.{extension}")),
             )),
             s if s.ends_with(&format!("{UP_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Up,
-                file_name.trim_end_matches(UP_FILENAME_SUFFIX),
+                file_name.trim_end_matches(&format!("{UP_FILENAME_SUFFIX}.{extension}")),
             )),
             s if s.ends_with(&format!("{DOWN_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Down,
-                file_name.trim_end_matches(DOWN_FILENAME_SUFFIX),
+                file_name.trim_end_matches(&format!("{DOWN_FILENAME_SUFFIX}.{extension}")),
             )),
             s if s.ends_with(&format!("{FRONT_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Front,
-                file_name.trim_end_matches(FRONT_FILENAME_SUFFIX),
+                file_name.trim_end_matches(&format!("{FRONT_FILENAME_SUFFIX}.{extension}")),
             )),
             s if s.ends_with(&format!("{BACK_FILENAME_SUFFIX}.{extension}")) => Some((
                 SkyboxTilePosition::Back,
-                file_name.trim_end_matches(BACK_FILENAME_SUFFIX),
+                file_name.trim_end_matches(&format!("{BACK_FILENAME_SUFFIX}.{extension}")),
             )),
             _ => None,
         }
     }
 
-    fn get_extension_from_filename(filename: &str) -> Option<&str> {
-        Path::new(filename)
+    fn get_extension_from_filename(file_name: &str) -> Option<&str> {
+        Path::new(file_name)
             .extension()
             .and_then(OsStr::to_str)
     }

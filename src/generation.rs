@@ -56,33 +56,6 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> TilesGroup {
         }
     }
 
-    let tiles_grouped: TilesGroup = tiles_grouped
-        .into_iter()
-        .filter(|(_, tiles)| {
-            if tiles.len() < TILES_FOR_MERGE.len() {
-                let present_tiles: Vec<&str> = tiles
-                    .iter()
-                    .filter_map(|tile| tile.path().file_name().and_then(|f| f.to_str()))
-                    .collect();
-
-                let missing_tiles: Vec<_> = TILES_FOR_MERGE
-                    .iter()
-                    .filter(|required_tile| !present_tiles.contains(required_tile))
-                    .collect();
-
-                eprintln!("Missing tiles: {missing_tiles:?}");
-
-                return false;
-            }
-
-            true
-        })
-        .collect();
-
-    // if tiles_grouped.is_empty() {
-    //     return Err(std::io::Error);
-    // }
-
     let skybox_names_cs = tiles_grouped
         .keys()
         .map(|f| SkyboxTile::result_file_name(f))
@@ -97,6 +70,11 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> TilesGroup {
 fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) {
     tiles.par_drain().for_each(|r| {
         let (prefix, mut tiles) = r;
+
+        if tiles.len() != TILES_FOR_MERGE.len() {
+            eprintln!("Not all tiles present for skybox {prefix}, skipping");
+            return;
+        }
 
         let first_file = image::open(tiles[0].path())
             .expect("failed to open first image to calculate dimensions");
