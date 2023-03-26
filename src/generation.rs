@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use anyhow::{bail, Context, Ok};
+use anyhow::{bail, Context};
 use rayon::prelude::*;
 
 use image::{GenericImage, GenericImageView, ImageBuffer};
@@ -69,16 +69,16 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> anyhow::Result<TilesGroup> {
 }
 
 fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) -> anyhow::Result<()> {
-    tiles.par_drain().for_each(|r| {
-        let (prefix, mut tiles) = r;
-
+    tiles.par_drain().for_each(|(prefix, mut tiles)| {
         if tiles.len() != TILES_FOR_MERGE.len() {
             eprintln!("Not all tiles present for skybox {prefix}, skipping");
             return;
         }
 
-        let first_file = image::open(tiles[0].path())
-            .expect("failed to open first image to calculate dimensions");
+        let Ok(first_file) = image::open(tiles[0].path()) else {
+            eprintln!("Could not open first file for skybox {prefix}, skipping");
+            return
+        };
 
         let (width, height) = first_file.dimensions();
 
@@ -89,7 +89,7 @@ fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) -> anyhow::R
 
         tiles.par_iter().for_each(|tile| {
             // TODO: process failure, with retry
-            let pic = image::open(tile.path()).unwrap();
+            let pic = image::open(tile.path()).expect("file failed to open");
             let (pic_width, pic_height) = pic.dimensions();
 
             if pic_height != height || pic_width != width {
