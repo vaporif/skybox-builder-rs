@@ -14,6 +14,7 @@ license = "MIT"
 testable=[]
 
 [dependencies]
+anyhow = "1.0.*"
 clap = { version = "4.1.*", features = ["cargo"] }
 image = { version = "0.24.*", default-features = false, features = ["png"] }
 rayon = "1.7.*"

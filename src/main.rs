@@ -1,14 +1,8 @@
 use clap::{command, Arg};
 use skybox_composer::generation::process_files;
-use std::{env, io::Error};
+use std::{env};
 
-fn main() {
-    if let Err(e) = run() {
-        panic!("{}", e);
-    }
-}
-
-fn run() -> Result<(), Error> {
+fn main() -> anyhow::Result<()> {
     let delete_flag = "delete";
     let matches = command!()
         .version(env!("CARGO_PKG_VERSION"))
@@ -23,7 +17,5 @@ fn run() -> Result<(), Error> {
         .get_matches();
 
     let delete_input_files = matches.get_flag(delete_flag);
-    process_files(delete_input_files)?;
-
-    Ok(())
+    process_files(delete_input_files)
 }
