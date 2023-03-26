@@ -5,6 +5,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use anyhow::{bail, Context};
 use rayon::prelude::*;
 
 use image::{GenericImage, GenericImageView, ImageBuffer};
@@ -13,17 +14,17 @@ use crate::skybox_tile::{SkyboxTile, SkyboxTilePosition, TILES_FOR_MERGE};
 
 type TilesGroup = HashMap<String, Vec<SkyboxTile>>;
 
-pub fn process_files(delete_input_files: bool) -> Result<(), std::io::Error> {
+pub fn process_files(delete_input_files: bool) -> anyhow::Result<()> {
     let file_paths = get_file_paths()?;
-    let skyboxes = get_skyboxes(file_paths);
+    let skyboxes = get_skyboxes(file_paths)?;
     println!("Generating skyboxes");
-    merge_all_files(skyboxes, delete_input_files);
+    merge_all_files(skyboxes, delete_input_files)?;
 
     Ok(())
 }
 
-fn get_file_paths() -> Result<Vec<PathBuf>, std::io::Error> {
-    let path = env::current_dir().expect("Should be able to read current directory");
+fn get_file_paths() -> anyhow::Result<Vec<PathBuf>> {
+    let path = env::current_dir().context("Failed to open current directory")?;
 
     println!("Processing dir {}", path.display());
 
@@ -33,12 +34,10 @@ fn get_file_paths() -> Result<Vec<PathBuf>, std::io::Error> {
         .filter(|f| f.is_file() && f.extension().unwrap_or_default() == "png")
         .collect();
 
-    println!("Found {} png files", paths.len());
-
     Ok(paths)
 }
 
-fn get_skyboxes(paths: Vec<PathBuf>) -> TilesGroup {
+fn get_skyboxes(paths: Vec<PathBuf>) -> anyhow::Result<TilesGroup> {
     let tiles_ungrouped: Vec<SkyboxTile> = paths
         .into_iter()
         .filter_map(SkyboxTile::from_file)
@@ -55,6 +54,10 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> TilesGroup {
         }
     }
 
+    if tiles_grouped.is_empty() {
+        bail!("No files found")
+    }
+
     let skybox_names_cs = tiles_grouped
         .keys()
         .map(|f| SkyboxTile::result_file_name(f))
@@ -62,20 +65,20 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> TilesGroup {
         .join(",");
     println!("Files could generate skyboxes: {skybox_names_cs}");
 
-    tiles_grouped
+    Ok(tiles_grouped)
 }
 
-fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) {
-    tiles.par_drain().for_each(|r| {
-        let (prefix, mut tiles) = r;
-
+fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) -> anyhow::Result<()> {
+    tiles.par_drain().for_each(|(prefix, mut tiles)| {
         if tiles.len() != TILES_FOR_MERGE.len() {
             eprintln!("Not all tiles present for skybox {prefix}, skipping");
             return;
         }
 
-        let first_file = image::open(tiles[0].path())
-            .expect("failed to open first image to calculate dimensions");
+        let Ok(first_file) = image::open(tiles[0].path()) else {
+            eprintln!("Could not open first file for skybox {prefix}, skipping");
+            return
+        };
 
         let (width, height) = first_file.dimensions();
 
@@ -85,10 +88,11 @@ fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) {
         let reserve_file_mut = Arc::new(Mutex::new(result_file));
 
         tiles.par_iter().for_each(|tile| {
-            // TODO: process failure
-            let pic = image::open(tile.path()).unwrap();
+            // TODO: process failure, with retry
+            let pic = image::open(tile.path()).expect("file failed to open");
             let (pic_width, pic_height) = pic.dimensions();
 
+            // TODO: remove file
             if pic_height != height || pic_width != width {
                 eprintln!(
                     "Not all tiles on skybox {} have same dimensions. Skipping skybox",
@@ -134,7 +138,7 @@ fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) {
 
         reserve_file_mut
             .lock()
-            // TODO: process failure
+            // TODO: process failure, with retry
             .unwrap()
             .save_with_format(
                 SkyboxTile::result_file_name(&prefix),
@@ -145,7 +149,9 @@ fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) {
         if delete_input_files {
             tiles.drain(..).for_each(|tile| tile.delete());
         }
-    })
+    });
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -163,7 +169,7 @@ mod tests {
             .map(|f| f.path().to_owned())
             .collect();
 
-        let skyboxes = get_skyboxes(paths);
+        let skyboxes = get_skyboxes(paths).expect("skybox generates");
 
         similar_asserts::assert_eq!(
             HashMap::from([("skybox_01a".to_owned(), expected_skybox_tiles)]),
@@ -182,7 +188,7 @@ mod tests {
             .map(|f| f.path().to_owned())
             .collect();
 
-        let skyboxes = get_skyboxes(paths);
+        let skyboxes = get_skyboxes(paths).expect("skybox generates");
 
         similar_asserts::assert_eq!(
             HashMap::from([
