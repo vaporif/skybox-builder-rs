@@ -10,14 +10,10 @@ use rayon::prelude::*;
 
 use image::{GenericImage, GenericImageView, ImageBuffer};
 
-const SKYBOX_TILES_AMOUNT: usize = 6;
+mod skybox_tile;
+use skybox_tile::{SkyboxTile, SkyboxTilePosition};
 
-const LEFT_PNG_FILE_NAME: &str = "left.png";
-const RIGHT_PNG_FILE_NAME: &str = "right.png";
-const UP_PNG_FILE_NAME: &str = "up.png";
-const DOWN_PNG_FILE_NAME: &str = "down.png";
-const FRONT_PNG_FILE_NAME: &str = "front.png";
-const BACK_PNG_FILE_NAME: &str = "back.png";
+const SKYBOX_TILES_AMOUNT: usize = 6;
 
 pub fn process_files(delete_input_files: bool) -> Result<(), Error> {
     let file_paths = get_file_paths()?;
@@ -52,57 +48,13 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
 
     let tiles_ungrouped: Vec<SkyboxTile> = paths
         .into_iter()
-        .filter_map(|path| {
-            match path
-                .file_name()
-                .and_then(|f| f.to_str())
-                .map(|f| f.to_owned())
-            {
-                Some(p) if p.ends_with(LEFT_PNG_FILE_NAME) => Some(SkyboxTile::new(
-                    path,
-                    &p,
-                    SkyboxTilePosition::Left,
-                    LEFT_PNG_FILE_NAME,
-                )),
-                Some(p) if p.ends_with(RIGHT_PNG_FILE_NAME) => Some(SkyboxTile::new(
-                    path,
-                    &p,
-                    SkyboxTilePosition::Right,
-                    RIGHT_PNG_FILE_NAME,
-                )),
-                Some(p) if p.ends_with(UP_PNG_FILE_NAME) => Some(SkyboxTile::new(
-                    path,
-                    &p,
-                    SkyboxTilePosition::Up,
-                    UP_PNG_FILE_NAME,
-                )),
-                Some(p) if p.ends_with(DOWN_PNG_FILE_NAME) => Some(SkyboxTile::new(
-                    path,
-                    &p,
-                    SkyboxTilePosition::Down,
-                    DOWN_PNG_FILE_NAME,
-                )),
-                Some(p) if p.ends_with(FRONT_PNG_FILE_NAME) => Some(SkyboxTile::new(
-                    path,
-                    &p,
-                    SkyboxTilePosition::Front,
-                    FRONT_PNG_FILE_NAME,
-                )),
-                Some(p) if p.ends_with(BACK_PNG_FILE_NAME) => Some(SkyboxTile::new(
-                    path,
-                    &p,
-                    SkyboxTilePosition::Back,
-                    BACK_PNG_FILE_NAME,
-                )),
-                _ => None,
-            }
-        })
+        .filter_map(|path| SkyboxTile::from_file(path))
         .collect();
 
     let mut tiles = HashMap::<String, Vec<SkyboxTile>>::new();
 
     for ele in tiles_ungrouped {
-        match tiles.entry(ele.prefix.clone()) {
+        match tiles.entry(ele.prefix().to_string()) {
             Entry::Occupied(mut o) => o.get_mut().push(ele),
             Entry::Vacant(v) => {
                 v.insert(vec![ele]);
@@ -128,7 +80,7 @@ fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_fil
             return;
         }
 
-        let first_file = image::open(&tiles[0].path)
+        let first_file = image::open(&tiles[0].path())
             .expect("failed to open first image to calculate dimensions");
 
         let (width, height) = first_file.dimensions();
@@ -139,7 +91,7 @@ fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_fil
         let reserve_file_mut = Arc::new(Mutex::new(result_file));
 
         tiles.par_iter().for_each(|tile| {
-            let pic = image::open(&tile.path).unwrap();
+            let pic = image::open(&tile.path()).unwrap();
             let (pic_width, pic_height) = pic.dimensions();
 
             if pic_height != height || pic_width != width {
@@ -151,7 +103,7 @@ fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_fil
                 return;
             }
 
-            match tile.position {
+            match tile.position() {
                 SkyboxTilePosition::Left => reserve_file_mut
                     .lock()
                     .expect("result file lock has failed")
@@ -200,53 +152,6 @@ fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_fil
     })
 }
 
-#[derive(PartialEq, Debug)]
-#[cfg_attr(feature = "testable", derive(Clone))]
-struct SkyboxTile {
-    path: PathBuf,
-    prefix: String,
-    position: SkyboxTilePosition,
-}
-
-impl SkyboxTile {
-    fn new(
-        path: PathBuf,
-        file_name: &str,
-        position: SkyboxTilePosition,
-        file_suffix_to_omit: &str,
-    ) -> Self {
-        SkyboxTile {
-            path,
-            prefix: file_name.trim_end_matches(file_suffix_to_omit).to_owned(),
-            position,
-        }
-    }
-
-    fn delete(self) {
-        if let Err(error) = fs::remove_file(&self.path) {
-            eprintln!(
-                "Error removing file {}: {error}",
-                self.path.file_name().unwrap().to_str().unwrap()
-            )
-        }
-    }
-
-    fn result_file_name(prefix: &str) -> String {
-        format!("{}skybox.png", &prefix)
-    }
-}
-
-#[derive(PartialEq, Debug)]
-#[cfg_attr(feature = "testable", derive(Clone))]
-enum SkyboxTilePosition {
-    Left,
-    Right,
-    Up,
-    Down,
-    Front,
-    Back,
-}
-
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
@@ -259,7 +164,7 @@ mod tests {
 
         let paths = expected_skybox_tiles
             .iter()
-            .map(|f| f.path.clone())
+            .map(|f| f.path().to_owned())
             .collect();
 
         let skyboxes = get_skyboxes(paths);
@@ -278,7 +183,7 @@ mod tests {
         let paths: Vec<PathBuf> = expected_skybox_tiles_1
             .iter()
             .chain(expected_skybox_tiles_2.iter())
-            .map(|f| f.path.clone())
+            .map(|f| f.path().to_owned())
             .collect();
 
         let skyboxes = get_skyboxes(paths);
@@ -293,37 +198,9 @@ mod tests {
     }
 
     fn generate_skybox_tiles(prefix: &str) -> Vec<SkyboxTile> {
-        let left = SkyboxTile {
-            path: PathBuf::from(format!("{}left.png", prefix)),
-            prefix: prefix.to_owned(),
-            position: SkyboxTilePosition::Left,
-        };
-        let rigth = SkyboxTile {
-            path: PathBuf::from(format!("{}right.png", prefix)),
-            prefix: prefix.to_owned(),
-            position: SkyboxTilePosition::Right,
-        };
-        let up = SkyboxTile {
-            path: PathBuf::from(format!("{}up.png", prefix)),
-            prefix: prefix.to_owned(),
-            position: SkyboxTilePosition::Up,
-        };
-        let down = SkyboxTile {
-            path: PathBuf::from(format!("{}down.png", prefix)),
-            prefix: prefix.to_owned(),
-            position: SkyboxTilePosition::Down,
-        };
-        let front = SkyboxTile {
-            path: PathBuf::from(format!("{}front.png", prefix)),
-            prefix: prefix.to_owned(),
-            position: SkyboxTilePosition::Front,
-        };
-        let back = SkyboxTile {
-            path: PathBuf::from(format!("{}back.png", prefix)),
-            prefix: prefix.to_owned(),
-            position: SkyboxTilePosition::Back,
-        };
-
-        vec![left, rigth, up, down, front, back]
+        vec!["left", "rigth", "up", "down", "front", "back"]
+            .into_iter()
+            .filter_map(|f| SkyboxTile::from_file(PathBuf::from(format!("{prefix}{f}.png"))))
+            .collect()
     }
 }
