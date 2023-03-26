@@ -93,10 +93,6 @@ fn get_skyboxes(paths: Vec<PathBuf>) -> HashMap<String, Vec<SkyboxTile>> {
 fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_files: bool) {
     tiles.par_drain().for_each(|r| {
         let (prefix, mut tiles) = r;
-        if tiles.len() != TILES_FOR_MERGE.len() {
-            eprintln!("Not all tiles are set for skybox {prefix}. Skipping skybox");
-            return;
-        }
 
         let first_file = image::open(&tiles[0].path())
             .expect("failed to open first image to calculate dimensions");
@@ -109,6 +105,7 @@ fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_fil
         let reserve_file_mut = Arc::new(Mutex::new(result_file));
 
         tiles.par_iter().for_each(|tile| {
+            // TODO: process failure
             let pic = image::open(&tile.path()).unwrap();
             let (pic_width, pic_height) = pic.dimensions();
 
@@ -157,6 +154,7 @@ fn merge_all_files(mut tiles: HashMap<String, Vec<SkyboxTile>>, delete_input_fil
 
         reserve_file_mut
             .lock()
+            // TODO: process failure
             .unwrap()
             .save_with_format(
                 SkyboxTile::result_file_name(&prefix),
