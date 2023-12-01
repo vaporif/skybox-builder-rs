@@ -77,7 +77,7 @@ fn merge_all_files(mut tiles: TilesGroup, delete_input_files: bool) -> anyhow::R
 
         let Ok(first_file) = image::open(tiles[0].path()) else {
             eprintln!("Could not open first file for skybox {prefix}, skipping");
-            return
+            return;
         };
 
         let (width, height) = first_file.dimensions();
