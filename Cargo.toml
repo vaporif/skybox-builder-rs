@@ -16,7 +16,7 @@ testable=[]
 [dependencies]
 anyhow = "1.0.70"
 clap = { version = "4.1.13", features = ["cargo"] }
-image = { version = "0.24.6", default-features = false, features = ["png"] }
+image = { version = "0.25.0", default-features = false, features = ["png"] }
 rayon = "1.7.0"
 
 [dev-dependencies]
